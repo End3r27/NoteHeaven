@@ -1,0 +1,276 @@
+import { useState, useEffect } from "react";
+import { User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { NotesSidebar } from "./NotesSidebar";
+import { NotesHeader } from "./NotesHeader";
+import { NoteEditor } from "./NoteEditor";
+import { useToast } from "@/hooks/use-toast";
+
+interface Note {
+  id: string;
+  title: string;
+  body: string;
+  folder_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Folder {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+interface Tag {
+  id: string;
+  name: string;
+}
+
+export function NotesLayout({ user }: { user: User }) {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchFolders();
+    fetchTags();
+    fetchNotes();
+  }, []);
+
+  const fetchNotes = async () => {
+    const { data, error } = await supabase
+      .from("notes")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load notes",
+        variant: "destructive",
+      });
+    } else {
+      setNotes(data || []);
+    }
+  };
+
+  const fetchFolders = async () => {
+    const { data, error } = await supabase
+      .from("folders")
+      .select("*")
+      .order("name");
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load folders",
+        variant: "destructive",
+      });
+    } else {
+      setFolders(data || []);
+    }
+  };
+
+  const fetchTags = async () => {
+    const { data, error } = await supabase
+      .from("tags")
+      .select("*")
+      .order("name");
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load tags",
+        variant: "destructive",
+      });
+    } else {
+      setTags(data || []);
+    }
+  };
+
+  const createNewNote = async () => {
+    const { data, error } = await supabase
+      .from("notes")
+      .insert({
+        user_id: user.id,
+        title: "Untitled",
+        body: "",
+        folder_id: selectedFolder,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create note",
+        variant: "destructive",
+      });
+    } else {
+      setNotes([data, ...notes]);
+      setSelectedNote(data);
+      toast({
+        title: "Success",
+        description: "New note created",
+      });
+    }
+  };
+
+  const deleteNote = async (noteId: string) => {
+    const { error } = await supabase.from("notes").delete().eq("id", noteId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete note",
+        variant: "destructive",
+      });
+    } else {
+      setNotes(notes.filter((n) => n.id !== noteId));
+      if (selectedNote?.id === noteId) {
+        setSelectedNote(null);
+      }
+      toast({
+        title: "Success",
+        description: "Note deleted",
+      });
+    }
+  };
+
+  const updateNote = async (noteId: string, updates: Partial<Note>) => {
+    const { data, error } = await supabase
+      .from("notes")
+      .update(updates)
+      .eq("id", noteId)
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update note",
+        variant: "destructive",
+      });
+    } else {
+      setNotes(notes.map((n) => (n.id === noteId ? data : n)));
+      if (selectedNote?.id === noteId) {
+        setSelectedNote(data);
+      }
+    }
+  };
+
+  const createFolder = async (name: string) => {
+    const { data, error } = await supabase
+      .from("folders")
+      .insert({ user_id: user.id, name })
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setFolders([...folders, data]);
+      toast({
+        title: "Success",
+        description: "Folder created",
+      });
+    }
+  };
+
+  const deleteFolder = async (folderId: string) => {
+    const { error } = await supabase.from("folders").delete().eq("id", folderId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete folder",
+        variant: "destructive",
+      });
+    } else {
+      setFolders(folders.filter((f) => f.id !== folderId));
+      if (selectedFolder === folderId) {
+        setSelectedFolder(null);
+      }
+      toast({
+        title: "Success",
+        description: "Folder deleted",
+      });
+    }
+  };
+
+  const filteredNotes = notes.filter((note) => {
+    const matchesSearch =
+      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      note.body.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFolder = !selectedFolder || note.folder_id === selectedFolder;
+    return matchesSearch && matchesFolder;
+  });
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <NotesSidebar
+          folders={folders}
+          tags={tags}
+          selectedFolder={selectedFolder}
+          onSelectFolder={setSelectedFolder}
+          onCreateFolder={createFolder}
+          onDeleteFolder={deleteFolder}
+          user={user}
+        />
+        <div className="flex-1 flex flex-col">
+          <NotesHeader
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onCreateNote={createNewNote}
+          />
+          <div className="flex-1 flex">
+            <div className="w-64 border-r border-border overflow-y-auto">
+              <div className="p-4 space-y-2">
+                {filteredNotes.map((note) => (
+                  <button
+                    key={note.id}
+                    onClick={() => setSelectedNote(note)}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      selectedNote?.id === note.id
+                        ? "bg-primary/10 text-primary"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    <div className="font-medium truncate">{note.title}</div>
+                    <div className="text-sm text-muted-foreground truncate">
+                      {note.body.substring(0, 50)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1">
+              {selectedNote ? (
+                <NoteEditor
+                  note={selectedNote}
+                  onUpdate={updateNote}
+                  onDelete={deleteNote}
+                  tags={tags}
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground">
+                  Select a note or create a new one
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
