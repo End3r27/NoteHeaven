@@ -1,4 +1,4 @@
-import { Search, Plus, Moon, Sun } from "lucide-react";
+import { Search, Plus, Moon, Sun, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -8,12 +8,14 @@ interface NotesHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onCreateNote: () => void;
+  onOpenInsights: () => void;
 }
 
 export function NotesHeader({
   searchQuery,
   onSearchChange,
   onCreateNote,
+  onOpenInsights,
 }: NotesHeaderProps) {
   const { theme, setTheme } = useTheme();
 
@@ -31,6 +33,10 @@ export function NotesHeader({
           />
         </div>
       </div>
+      <Button onClick={onOpenInsights} size="sm" variant="outline">
+        <Sparkles className="h-4 w-4 mr-2" />
+        AI Insights
+      </Button>
       <Button onClick={onCreateNote} size="sm">
         <Plus className="h-4 w-4 mr-2" />
         New Note

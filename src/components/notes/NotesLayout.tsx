@@ -5,6 +5,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { NotesSidebar } from "./NotesSidebar";
 import { NotesHeader } from "./NotesHeader";
 import { NoteEditor } from "./NoteEditor";
+import { AIInsights } from "./AIInsights";
 import { useToast } from "@/hooks/use-toast";
 
 interface Note {
@@ -34,6 +35,7 @@ export function NotesLayout({ user }: { user: User }) {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showInsights, setShowInsights] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -232,42 +234,51 @@ export function NotesLayout({ user }: { user: User }) {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onCreateNote={createNewNote}
+            onOpenInsights={() => setShowInsights(!showInsights)}
           />
           <div className="flex-1 flex">
-            <div className="w-64 border-r border-border overflow-y-auto">
-              <div className="p-4 space-y-2">
-                {filteredNotes.map((note) => (
-                  <button
-                    key={note.id}
-                    onClick={() => setSelectedNote(note)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      selectedNote?.id === note.id
-                        ? "bg-primary/10 text-primary"
-                        : "hover:bg-muted"
-                    }`}
-                  >
-                    <div className="font-medium truncate">{note.title}</div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      {note.body.substring(0, 50)}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex-1">
-              {selectedNote ? (
-                <NoteEditor
-                  note={selectedNote}
-                  onUpdate={updateNote}
-                  onDelete={deleteNote}
-                  tags={tags}
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground">
-                  Select a note or create a new one
+            {!showInsights ? (
+              <>
+                <div className="w-64 border-r border-border overflow-y-auto">
+                  <div className="p-4 space-y-2">
+                    {filteredNotes.map((note) => (
+                      <button
+                        key={note.id}
+                        onClick={() => setSelectedNote(note)}
+                        className={`w-full text-left p-3 rounded-lg transition-colors ${
+                          selectedNote?.id === note.id
+                            ? "bg-primary/10 text-primary"
+                            : "hover:bg-muted"
+                        }`}
+                      >
+                        <div className="font-medium truncate">{note.title}</div>
+                        <div className="text-sm text-muted-foreground truncate">
+                          {note.body.substring(0, 50)}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
+                <div className="flex-1">
+                  {selectedNote ? (
+                    <NoteEditor
+                      note={selectedNote}
+                      onUpdate={updateNote}
+                      onDelete={deleteNote}
+                      tags={tags}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                      Select a note or create a new one
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 overflow-y-auto">
+                <AIInsights folders={folders} tags={tags} />
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,1 +1,7 @@
 project_id = "vnvhnroqzutlcsyxyyaq"
+
+[functions]
+enabled = true
+
+[functions.summarize-notes]
+verify_jwt = true
