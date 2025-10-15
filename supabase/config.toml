@@ -5,3 +5,18 @@ enabled = true
 
 [functions.summarize-notes]
 verify_jwt = true
+
+[functions.recap-note]
+verify_jwt = true
+
+[functions.suggest-tags]
+verify_jwt = true
+
+[functions.daily-recap]
+verify_jwt = true
+
+[functions.semantic-search]
+verify_jwt = true
+
+[functions.find-related-notes]
+verify_jwt = true

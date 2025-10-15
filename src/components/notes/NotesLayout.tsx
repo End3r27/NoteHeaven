@@ -6,6 +6,7 @@ import { NotesSidebar } from "./NotesSidebar";
 import { NotesHeader } from "./NotesHeader";
 import { NoteEditor } from "./NoteEditor";
 import { AIInsights } from "./AIInsights";
+import { RelatedNotes } from "./RelatedNotes";
 import { useToast } from "@/hooks/use-toast";
 
 interface Note {
@@ -36,6 +37,9 @@ export function NotesLayout({ user }: { user: User }) {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showInsights, setShowInsights] = useState(false);
+  const [useSemanticSearch, setUseSemanticSearch] = useState(false);
+  const [semanticResults, setSemanticResults] = useState<Note[]>([]);
+  const [searchingSemantics, setSearchingSemantics] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -217,6 +221,44 @@ export function NotesLayout({ user }: { user: User }) {
     return matchesSearch && matchesFolder;
   });
 
+  const performSemanticSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSemanticResults([]);
+      return;
+    }
+
+    setSearchingSemantics(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('semantic-search', {
+        body: { query }
+      });
+
+      if (error) throw error;
+
+      setSemanticResults(data.results || []);
+    } catch (error: any) {
+      console.error('Error performing semantic search:', error);
+      toast({
+        title: "Error",
+        description: "Failed to perform semantic search",
+        variant: "destructive",
+      });
+    } finally {
+      setSearchingSemantics(false);
+    }
+  };
+
+  useEffect(() => {
+    if (useSemanticSearch && searchQuery) {
+      const debounce = setTimeout(() => {
+        performSemanticSearch(searchQuery);
+      }, 500);
+      return () => clearTimeout(debounce);
+    }
+  }, [searchQuery, useSemanticSearch]);
+
+  const displayedNotes = useSemanticSearch && searchQuery ? semanticResults : filteredNotes;
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -235,13 +277,16 @@ export function NotesLayout({ user }: { user: User }) {
             onSearchChange={setSearchQuery}
             onCreateNote={createNewNote}
             onOpenInsights={() => setShowInsights(!showInsights)}
+            useSemanticSearch={useSemanticSearch}
+            onToggleSemanticSearch={setUseSemanticSearch}
+            searchingSemantics={searchingSemantics}
           />
           <div className="flex-1 flex">
             {!showInsights ? (
               <>
                 <div className="w-64 border-r border-border overflow-y-auto">
                   <div className="p-4 space-y-2">
-                    {filteredNotes.map((note) => (
+                    {displayedNotes.map((note) => (
                       <button
                         key={note.id}
                         onClick={() => setSelectedNote(note)}
@@ -259,17 +304,30 @@ export function NotesLayout({ user }: { user: User }) {
                     ))}
                   </div>
                 </div>
-                <div className="flex-1">
-                  {selectedNote ? (
-                    <NoteEditor
-                      note={selectedNote}
-                      onUpdate={updateNote}
-                      onDelete={deleteNote}
-                      tags={tags}
-                    />
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground">
-                      Select a note or create a new one
+                <div className="flex-1 flex">
+                  <div className="flex-1">
+                    {selectedNote ? (
+                      <NoteEditor
+                        note={selectedNote}
+                        onUpdate={updateNote}
+                        onDelete={deleteNote}
+                        tags={tags}
+                      />
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-muted-foreground">
+                        Select a note or create a new one
+                      </div>
+                    )}
+                  </div>
+                  {selectedNote && (
+                    <div className="w-80 border-l border-border overflow-y-auto p-4">
+                      <RelatedNotes 
+                        currentNoteId={selectedNote.id}
+                        onNoteClick={(noteId) => {
+                          const note = notes.find(n => n.id === noteId);
+                          if (note) setSelectedNote(note);
+                        }}
+                      />
                     </div>
                   )}
                 </div>
