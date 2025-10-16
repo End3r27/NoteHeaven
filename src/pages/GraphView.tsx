@@ -9,8 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 interface Node {
   id: string;
   title: string;
-  type: "note" | "tag";
+  type: "note" | "tag" | "folder";
   tags?: string[];
+  folderId?: string;
 }
 
 interface Link {
@@ -36,11 +37,13 @@ export default function GraphView() {
 
   const fetchGraphData = async () => {
     try {
-      const { data: notes, error } = await supabase
+      // Fetch notes with tags and folders
+      const { data: notes, error: notesError } = await supabase
         .from("notes")
         .select(`
           id,
           title,
+          folder_id,
           note_tags (
             tags (
               name
@@ -49,14 +52,34 @@ export default function GraphView() {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (notesError) throw notesError;
+
+      // Fetch folders
+      const { data: folders, error: foldersError } = await supabase
+        .from("folders")
+        .select("id, name");
+
+      if (foldersError) throw foldersError;
 
       const nodes: Node[] = [];
       const links: Link[] = [];
       const tagNodes = new Set<string>();
+      const folderNodes = new Set<string>();
+
+      // Create folder nodes
+      folders?.forEach((folder) => {
+        folderNodes.add(folder.id);
+        nodes.push({
+          id: `folder-${folder.id}`,
+          title: folder.name,
+          type: "folder",
+        });
+      });
 
       // Create note nodes
+      const noteIds: string[] = [];
       notes?.forEach((note: any) => {
+        noteIds.push(note.id);
         const tagNames = note.note_tags?.map((nt: any) => nt.tags.name) || [];
         
         nodes.push({
@@ -64,7 +87,17 @@ export default function GraphView() {
           title: note.title || "Untitled",
           type: "note",
           tags: tagNames,
+          folderId: note.folder_id,
         });
+
+        // Link note to folder
+        if (note.folder_id) {
+          links.push({
+            source: `note-${note.id}`,
+            target: `folder-${note.folder_id}`,
+            type: "tag",
+          });
+        }
 
         // Create tag nodes and links
         tagNames.forEach((tag: string) => {
@@ -84,6 +117,28 @@ export default function GraphView() {
           });
         });
       });
+
+      // Fetch related notes for each note
+      for (const noteId of noteIds.slice(0, 20)) { // Limit to first 20 notes for performance
+        try {
+          const { data: relatedData } = await supabase.functions.invoke('find-related-notes', {
+            body: { noteId, limit: 3 }
+          });
+
+          relatedData?.relatedNotes?.forEach((related: any) => {
+            // Only add link if both notes exist in our graph
+            if (noteIds.includes(related.id)) {
+              links.push({
+                source: `note-${noteId}`,
+                target: `note-${related.id}`,
+                type: "related",
+              });
+            }
+          });
+        } catch (err) {
+          console.error("Error fetching related notes:", err);
+        }
+      }
 
       setGraphData({ nodes, links });
     } catch (error: any) {
@@ -134,9 +189,10 @@ export default function GraphView() {
       .selectAll("line")
       .data(graphData.links)
       .join("line")
-      .attr("stroke", "#999")
-      .attr("stroke-opacity", 0.6)
-      .attr("stroke-width", (d) => (d.type === "related" ? 2 : 1));
+      .attr("stroke", (d) => (d.type === "related" ? "hsl(var(--primary))" : "#999"))
+      .attr("stroke-opacity", (d) => (d.type === "related" ? 0.8 : 0.4))
+      .attr("stroke-width", (d) => (d.type === "related" ? 3 : 1))
+      .attr("stroke-dasharray", (d) => (d.type === "related" ? "5,5" : "0"));
 
     // Nodes
     const node = g
@@ -153,8 +209,12 @@ export default function GraphView() {
 
     node
       .append("circle")
-      .attr("r", (d) => (d.type === "note" ? 20 : 15))
-      .attr("fill", (d) => (d.type === "note" ? "hsl(var(--primary))" : "hsl(var(--accent))"))
+      .attr("r", (d) => (d.type === "note" ? 20 : d.type === "folder" ? 18 : 15))
+      .attr("fill", (d) => {
+        if (d.type === "note") return "hsl(var(--primary))";
+        if (d.type === "folder") return "hsl(var(--chart-2))";
+        return "hsl(var(--accent))";
+      })
       .attr("stroke", "#fff")
       .attr("stroke-width", 2)
       .style("cursor", "pointer")
@@ -162,6 +222,9 @@ export default function GraphView() {
         if (d.type === "note") {
           const noteId = d.id.replace("note-", "");
           navigate(`/notes?note=${noteId}`);
+        } else if (d.type === "folder") {
+          const folderId = d.id.replace("folder-", "");
+          navigate(`/notes?folder=${folderId}`);
         }
       });
 
@@ -229,8 +292,16 @@ export default function GraphView() {
             <span>Notes</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-chart-2"></div>
+            <span>Folders</span>
+          </div>
+          <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-accent"></div>
             <span>Tags</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-0.5 bg-primary" style={{ width: '20px' }}></div>
+            <span>Related</span>
           </div>
         </div>
       </header>
