@@ -38,7 +38,15 @@ export default function GraphView() {
     try {
       const { data: notes, error } = await supabase
         .from("notes")
-        .select("id, title, tags")
+        .select(`
+          id,
+          title,
+          note_tags (
+            tags (
+              name
+            )
+          )
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -48,16 +56,18 @@ export default function GraphView() {
       const tagNodes = new Set<string>();
 
       // Create note nodes
-      notes?.forEach((note) => {
+      notes?.forEach((note: any) => {
+        const tagNames = note.note_tags?.map((nt: any) => nt.tags.name) || [];
+        
         nodes.push({
           id: `note-${note.id}`,
           title: note.title || "Untitled",
           type: "note",
-          tags: note.tags || [],
+          tags: tagNames,
         });
 
         // Create tag nodes and links
-        note.tags?.forEach((tag: string) => {
+        tagNames.forEach((tag: string) => {
           if (!tagNodes.has(tag)) {
             tagNodes.add(tag);
             nodes.push({
