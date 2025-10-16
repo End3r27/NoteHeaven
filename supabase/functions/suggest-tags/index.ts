@@ -14,6 +14,10 @@ serve(async (req) => {
   try {
     const { title, body, language = 'en' } = await req.json();
     
+    if (!title || !body || title.trim().length === 0 || body.trim().length === 0) {
+      throw new Error('Title and content are required for tag suggestions');
+    }
+    
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
@@ -51,6 +55,8 @@ serve(async (req) => {
       ? `Suggerisci tag per questa nota:\n\nTitolo: ${title}\n\nContenuto: ${body}`
       : `Suggest tags for this note:\n\nTitle: ${title}\n\nContent: ${body}`;
 
+    console.log(`Making AI request for tag suggestions, language: ${language}`);
+    
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -89,10 +95,17 @@ serve(async (req) => {
         );
       }
       
-      throw new Error('AI gateway error');
+      // Include more specific error information
+      const errorMessage = `AI gateway error (${aiResponse.status}): ${errorText}`;
+      throw new Error(errorMessage);
     }
 
     const aiData = await aiResponse.json();
+    
+    if (!aiData.choices || !aiData.choices[0] || !aiData.choices[0].message) {
+      throw new Error('Invalid response format from AI gateway');
+    }
+    
     let content = aiData.choices[0].message.content;
     
     // Extract JSON array from response

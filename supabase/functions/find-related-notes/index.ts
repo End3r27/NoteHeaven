@@ -41,6 +41,10 @@ serve(async (req) => {
     if (noteError || !currentNote) {
       throw new Error('Note not found');
     }
+    
+    if (!currentNote.title || !currentNote.body) {
+      throw new Error('Note is missing title or content');
+    }
 
     // Get all other notes
     const { data: otherNotes, error } = await supabase
@@ -76,6 +80,8 @@ serve(async (req) => {
       ? `Nota corrente:\nTitolo: ${currentNote.title}\nContenuto: ${currentNote.body}\n\nAltre note:\n${notesContext}`
       : `Current Note:\nTitle: ${currentNote.title}\nContent: ${currentNote.body}\n\nOther Notes:\n${notesContext}`;
 
+    console.log(`Making AI request for related notes ${noteId}, language: ${language}`);
+    
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -114,10 +120,17 @@ serve(async (req) => {
         );
       }
       
-      throw new Error('AI gateway error');
+      // Include more specific error information
+      const errorMessage = `AI gateway error (${aiResponse.status}): ${errorText}`;
+      throw new Error(errorMessage);
     }
 
     const aiData = await aiResponse.json();
+    
+    if (!aiData.choices || !aiData.choices[0] || !aiData.choices[0].message) {
+      throw new Error('Invalid response format from AI gateway');
+    }
+    
     let content = aiData.choices[0].message.content;
     
     // Extract JSON array from response

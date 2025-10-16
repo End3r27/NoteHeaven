@@ -14,6 +14,10 @@ serve(async (req) => {
   try {
     const { query, language = 'en' } = await req.json();
     
+    if (!query || query.trim().length === 0) {
+      throw new Error('Search query is required');
+    }
+    
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
@@ -63,6 +67,8 @@ serve(async (req) => {
       ? `Query di ricerca: "${query}"\n\nNote:\n${notesContext}`
       : `Search query: "${query}"\n\nNotes:\n${notesContext}`;
 
+    console.log(`Making AI request for semantic search: "${query}", language: ${language}, notes count: ${notes.length}`);
+    
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -101,10 +107,17 @@ serve(async (req) => {
         );
       }
       
-      throw new Error('AI gateway error');
+      // Include more specific error information
+      const errorMessage = `AI gateway error (${aiResponse.status}): ${errorText}`;
+      throw new Error(errorMessage);
     }
 
     const aiData = await aiResponse.json();
+    
+    if (!aiData.choices || !aiData.choices[0] || !aiData.choices[0].message) {
+      throw new Error('Invalid response format from AI gateway');
+    }
+    
     let content = aiData.choices[0].message.content;
     
     // Extract JSON array from response
