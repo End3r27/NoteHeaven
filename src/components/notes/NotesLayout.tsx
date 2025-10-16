@@ -85,9 +85,13 @@ export function NotesLayout({ user }: { user: { id: string } }) {
   };
 
   const fetchTags = async () => {
+    // Only fetch tags that are actually used (have notes associated with them)
     const { data, error } = await supabase
       .from("tags")
-      .select("*")
+      .select(`
+        *,
+        note_tags!inner(note_id)
+      `)
       .order("name");
 
     if (error) {
@@ -97,7 +101,11 @@ export function NotesLayout({ user }: { user: { id: string } }) {
         variant: "destructive",
       });
     } else {
-      setTags(data || []);
+      // Remove duplicates and extract unique tags
+      const uniqueTags = Array.from(
+        new Map((data || []).map(tag => [tag.id, tag])).values()
+      );
+      setTags(uniqueTags);
     }
   };
 
@@ -143,6 +151,8 @@ export function NotesLayout({ user }: { user: { id: string } }) {
       if (selectedNote?.id === noteId) {
         setSelectedNote(null);
       }
+      // Refresh tags to remove any that are no longer used
+      fetchTags();
       toast({
         title: "Success",
         description: "Note deleted",
@@ -208,9 +218,60 @@ export function NotesLayout({ user }: { user: { id: string } }) {
       if (selectedFolder === folderId) {
         setSelectedFolder(null);
       }
+      // Refresh tags in case any became unused
+      fetchTags();
       toast({
         title: "Success",
         description: "Folder deleted",
+      });
+    }
+  };
+
+  // Clean up unused tags from the database
+  const cleanupUnusedTags = async () => {
+    try {
+      // Find all tags that have no notes associated with them
+      const { data: allTags } = await supabase
+        .from("tags")
+        .select("id");
+
+      if (!allTags) return;
+
+      const { data: usedTags } = await supabase
+        .from("note_tags")
+        .select("tag_id");
+
+      const usedTagIds = new Set((usedTags || []).map((t: any) => t.tag_id));
+      const unusedTagIds = allTags
+        .map((t: any) => t.id)
+        .filter((id: string) => !usedTagIds.has(id));
+
+      if (unusedTagIds.length > 0) {
+        const { error } = await supabase
+          .from("tags")
+          .delete()
+          .in("id", unusedTagIds);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: `Cleaned up ${unusedTagIds.length} unused tag(s)`,
+        });
+
+        // Refresh the tags list
+        fetchTags();
+      } else {
+        toast({
+          title: "Info",
+          description: "No unused tags to clean up",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to clean up unused tags",
+        variant: "destructive",
       });
     }
   };
@@ -330,6 +391,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
                         onUpdate={updateNote}
                         onDelete={deleteNote}
                         tags={tags}
+                        onTagsChange={fetchTags}
                       />
                     ) : (
                       <div className="h-full flex items-center justify-center text-muted-foreground">

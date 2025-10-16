@@ -28,9 +28,10 @@ interface NoteEditorProps {
   onUpdate: (noteId: string, updates: Partial<Note>) => void;
   onDelete: (noteId: string) => void;
   tags: Tag[];
+  onTagsChange?: () => void;
 }
 
-export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) {
+export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [body, setBody] = useState(note.body);
   const [hasChanges, setHasChanges] = useState(false);
@@ -249,6 +250,8 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
         .eq('tag_id', tagRow.id);
       if (error) throw error;
       setNoteTags((prev) => prev.filter((t) => t !== tagName));
+      // Notify parent to refresh tags list
+      if (onTagsChange) onTagsChange();
     } catch (e: any) {
       toast({ title: t('insights.toast.error.title'), description: e.message || 'Failed to remove tag', variant: 'destructive' });
     }
