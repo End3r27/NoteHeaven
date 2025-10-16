@@ -42,9 +42,9 @@ serve(async (req) => {
 
     const existingTagNames = existingTags?.map(t => t.name) || [];
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!GOOGLE_AI_API_KEY) {
+      throw new Error('GOOGLE_AI_API_KEY is not configured');
     }
 
     const systemPrompt = language === 'it'
@@ -55,26 +55,24 @@ serve(async (req) => {
       ? `Suggerisci tag per questa nota:\n\nTitolo: ${title}\n\nContenuto: ${body}`
       : `Suggest tags for this note:\n\nTitle: ${title}\n\nContent: ${body}`;
 
-    console.log(`Making AI request for tag suggestions, language: ${language}`);
-    
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    console.log(`Making AI request for tag suggestions, language: ${language}`);    
+
+    const model = 'gemini-1.5-flash-latest';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_AI_API_KEY}`;
+
+    const aiResponse = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gemini-2.5-flash',
-        messages: [
-          { 
-            role: 'system', 
-            content: systemPrompt
-          },
-          { 
-            role: 'user', 
-            content: userPrompt
-          }
-        ],
+        contents: [{
+          role: 'user',
+          parts: [{ text: userPrompt }]
+        }],
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        }
       }),
     });
 
@@ -82,31 +80,18 @@ serve(async (req) => {
       const errorText = await aiResponse.text();
       console.error('AI gateway error:', aiResponse.status, errorText);
       
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits depleted. Please add credits to continue.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
       // Include more specific error information
       const errorMessage = `AI gateway error (${aiResponse.status}): ${errorText}`;
       throw new Error(errorMessage);
     }
 
     const aiData = await aiResponse.json();
-    
-    if (!aiData.choices || !aiData.choices[0] || !aiData.choices[0].message) {
+
+    if (!aiData.candidates || !aiData.candidates[0] || !aiData.candidates[0].content || !aiData.candidates[0].content.parts || !aiData.candidates[0].content.parts[0]) {
       throw new Error('Invalid response format from AI gateway');
     }
     
-    let content = aiData.choices[0].message.content;
+    let content = aiData.candidates[0].content.parts[0].text;
     
     // Extract JSON array from response
     const jsonMatch = content.match(/\[.*\]/s);
