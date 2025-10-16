@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen } from "lucide-react";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import { useLanguage } from "@/components/language/LanguageProvider";
+import { BookOpen, Moon, Sun, Languages } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,6 +17,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,8 +34,8 @@ const Auth = () => {
         if (error) throw error;
 
         toast({
-          title: "Welcome back!",
-          description: "You've successfully logged in.",
+          title: t("auth.welcome_toast"),
+          description: t("auth.logged_in"),
         });
         navigate("/notes");
       } else {
@@ -46,14 +50,14 @@ const Auth = () => {
         if (error) throw error;
 
         toast({
-          title: "Account created!",
-          description: "You've successfully signed up. Welcome to NoteHaven!",
+          title: t("auth.account_created"),
+          description: t("auth.signed_up"),
         });
         navigate("/notes");
       }
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t("auth.error"),
         description: error.message,
         variant: "destructive",
       });
@@ -64,6 +68,26 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="absolute top-4 right-4 flex gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLanguage(language === "en" ? "it" : "en")}
+        >
+          <Languages className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
@@ -72,18 +96,18 @@ const Auth = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">
-            {isLogin ? "Welcome back" : "Create an account"}
+            {isLogin ? t("auth.welcome_back") : t("auth.create_account")}
           </CardTitle>
           <CardDescription>
             {isLogin
-              ? "Enter your credentials to access your notes"
-              : "Start organizing your thoughts with NoteHaven"}
+              ? t("auth.enter_credentials")
+              : t("auth.start_organizing")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("auth.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -94,7 +118,7 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -106,7 +130,7 @@ const Auth = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : isLogin ? "Sign in" : "Sign up"}
+              {loading ? t("auth.loading") : isLogin ? t("auth.sign_in") : t("auth.sign_up")}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
@@ -116,8 +140,8 @@ const Auth = () => {
               className="text-primary hover:underline"
             >
               {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
+                ? t("auth.no_account")
+                : t("auth.have_account")}
             </button>
           </div>
         </CardContent>

@@ -1,10 +1,11 @@
-import { Search, Plus, Moon, Sun, Sparkles, Calendar, Brain } from "lucide-react";
+import { Search, Plus, Moon, Sun, Sparkles, Calendar, Brain, Languages, Network } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { useLanguage } from "@/components/language/LanguageProvider";
 import { useNavigate } from "react-router-dom";
 
 interface NotesHeaderProps {
@@ -27,6 +28,7 @@ export function NotesHeader({
   searchingSemantics = false,
 }: NotesHeaderProps) {
   const { theme, setTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   return (
@@ -36,7 +38,7 @@ export function NotesHeader({
         <div className="relative flex-1 max-w-md">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${searchingSemantics ? 'animate-pulse' : ''} text-muted-foreground`} />
           <Input
-            placeholder={useSemanticSearch ? "Semantic search (e.g., 'notes about project ideas')..." : "Search notes..."}
+            placeholder={useSemanticSearch ? t("notes.semantic_search") : t("notes.search")}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"
@@ -51,22 +53,33 @@ export function NotesHeader({
             />
             <Label htmlFor="semantic-search" className="text-sm flex items-center gap-1 cursor-pointer">
               <Brain className="h-3 w-3" />
-              AI Search
+              {t("notes.ai_search")}
             </Label>
           </div>
         )}
       </div>
       <Button onClick={onOpenInsights} size="sm" variant="outline">
         <Sparkles className="h-4 w-4 mr-2" />
-        AI Insights
+        {t("notes.ai_insights")}
       </Button>
       <Button onClick={() => navigate('/daily')} size="sm" variant="outline">
         <Calendar className="h-4 w-4 mr-2" />
-        Daily Recap
+        {t("notes.daily_recap")}
+      </Button>
+      <Button onClick={() => navigate('/graph')} size="sm" variant="outline">
+        <Network className="h-4 w-4 mr-2" />
+        Graph
       </Button>
       <Button onClick={onCreateNote} size="sm">
         <Plus className="h-4 w-4 mr-2" />
-        New Note
+        {t("notes.new_note")}
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setLanguage(language === "en" ? "it" : "en")}
+      >
+        <Languages className="h-4 w-4" />
       </Button>
       <Button
         variant="ghost"
