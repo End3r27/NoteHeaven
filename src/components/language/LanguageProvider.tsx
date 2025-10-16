@@ -114,6 +114,10 @@ const translations = {
     "insights.empty.recent": "No notes found for recent activity and notes. Create some notes to get started!",
     "insights.empty.folder": "No notes found for notes in the \"{name}\" folder. Create some notes to get started!",
     "insights.empty.tag": "No notes found for notes tagged with \"{name}\". Create some notes to get started!",
+    
+    // Related Notes
+    "related.title": "Related Notes",
+    "related.description": "AI-suggested notes with similar content",
   },
   it: {
     // Auth page
@@ -220,6 +224,10 @@ const translations = {
     "insights.empty.recent": "Nessuna nota trovata per attività recente e note. Crea alcune note per iniziare!",
     "insights.empty.folder": "Nessuna nota trovata per le note nella cartella \"{name}\". Crea alcune note per iniziare!",
     "insights.empty.tag": "Nessuna nota trovata per le note con tag \"{name}\". Crea alcune note per iniziare!",
+    
+    // Related Notes
+    "related.title": "Note correlate",
+    "related.description": "Note suggerite dall'AI con contenuto simile",
   },
 };
 

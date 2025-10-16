@@ -30,7 +30,7 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
   const [selectedFolder, setSelectedFolder] = useState<string>("");
   const [selectedTag, setSelectedTag] = useState<string>("");
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const generateSummary = async (type: 'recent' | 'folder' | 'tag', identifier?: string) => {
     setLoading(true);
@@ -38,7 +38,7 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
     setNoteCount(0);
 
     try {
-      const body: any = { type };
+      const body: any = { type, language };
       
       if (type === 'folder' && identifier) {
         body.folderId = identifier;

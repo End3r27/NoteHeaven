@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { noteId } = await req.json();
+    const { noteId, language = 'en' } = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -68,6 +68,14 @@ serve(async (req) => {
       `ID: ${note.id}\nTitle: ${note.title}\nContent: ${note.body}`
     ).join('\n\n---\n\n');
 
+    const systemPrompt = language === 'it'
+      ? 'Sei un assistente per le relazioni tra note. Data una nota corrente e un elenco di altre note, identifica le prime 5 note semanticamente più correlate in base alla somiglianza del contenuto, ai temi condivisi o agli argomenti complementari. Restituisci SOLO un array JSON di ID di note ordinati per rilevanza, nient\'altro. Esempio: ["id1", "id2", "id3"]'
+      : 'You are a note relationship assistant. Given a current note and a list of other notes, identify the top 5 most semantically related notes based on content similarity, shared themes, or complementary topics. Return ONLY a JSON array of note IDs ordered by relevance, nothing else. Example: ["id1", "id2", "id3"]';
+
+    const userPrompt = language === 'it'
+      ? `Nota corrente:\nTitolo: ${currentNote.title}\nContenuto: ${currentNote.body}\n\nAltre note:\n${notesContext}`
+      : `Current Note:\nTitle: ${currentNote.title}\nContent: ${currentNote.body}\n\nOther Notes:\n${notesContext}`;
+
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -79,11 +87,11 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a note relationship assistant. Given a current note and a list of other notes, identify the top 5 most semantically related notes based on content similarity, shared themes, or complementary topics. Return ONLY a JSON array of note IDs ordered by relevance, nothing else. Example: ["id1", "id2", "id3"]'
+            content: systemPrompt
           },
           { 
             role: 'user', 
-            content: `Current Note:\nTitle: ${currentNote.title}\nContent: ${currentNote.body}\n\nOther Notes:\n${notesContext}` 
+            content: userPrompt
           }
         ],
       }),

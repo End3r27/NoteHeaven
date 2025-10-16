@@ -21,7 +21,7 @@ const DailyRecap = () => {
   const [noteCount, setNoteCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     generateDailyRecap();
@@ -30,7 +30,9 @@ const DailyRecap = () => {
   const generateDailyRecap = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('daily-recap');
+      const { data, error } = await supabase.functions.invoke('daily-recap', {
+        body: { language }
+      });
 
       if (error) throw error;
 

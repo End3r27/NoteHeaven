@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, body } = await req.json();
+    const { title, body, language = 'en' } = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -43,6 +43,14 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    const systemPrompt = language === 'it'
+      ? `Sei un assistente utile che suggerisce tag rilevanti per le note. Suggerisci 3-5 tag brevi e rilevanti in base al contenuto. Considera i tag esistenti quando possibile: ${existingTagNames.join(', ')}. Restituisci solo un array JSON di stringhe di tag, nient'altro.`
+      : `You are a helpful assistant that suggests relevant tags for notes. Suggest 3-5 short, relevant tags based on the content. Consider existing tags when possible: ${existingTagNames.join(', ')}. Return only a JSON array of tag strings, nothing else.`;
+
+    const userPrompt = language === 'it'
+      ? `Suggerisci tag per questa nota:\n\nTitolo: ${title}\n\nContenuto: ${body}`
+      : `Suggest tags for this note:\n\nTitle: ${title}\n\nContent: ${body}`;
+
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -54,11 +62,11 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: `You are a helpful assistant that suggests relevant tags for notes. Suggest 3-5 short, relevant tags based on the content. Consider existing tags when possible: ${existingTagNames.join(', ')}. Return only a JSON array of tag strings, nothing else.`
+            content: systemPrompt
           },
           { 
             role: 'user', 
-            content: `Suggest tags for this note:\n\nTitle: ${title}\n\nContent: ${body}` 
+            content: userPrompt
           }
         ],
       }),

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Link2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface Note {
   id: string;
@@ -19,6 +20,7 @@ export function RelatedNotes({ currentNoteId, onNoteClick }: RelatedNotesProps) 
   const [relatedNotes, setRelatedNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     findRelatedNotes();
@@ -28,7 +30,7 @@ export function RelatedNotes({ currentNoteId, onNoteClick }: RelatedNotesProps) 
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('find-related-notes', {
-        body: { noteId: currentNoteId }
+        body: { noteId: currentNoteId, language }
       });
 
       if (error) throw error;
@@ -52,7 +54,7 @@ export function RelatedNotes({ currentNoteId, onNoteClick }: RelatedNotesProps) 
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
             <Link2 className="h-4 w-4" />
-            Related Notes
+            {t("related.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -73,10 +75,10 @@ export function RelatedNotes({ currentNoteId, onNoteClick }: RelatedNotesProps) 
       <CardHeader>
         <CardTitle className="text-sm flex items-center gap-2">
           <Link2 className="h-4 w-4" />
-          Related Notes
+          {t("related.title")}
         </CardTitle>
         <CardDescription className="text-xs">
-          AI-suggested notes with similar content
+          {t("related.description")}
         </CardDescription>
       </CardHeader>
       <CardContent>

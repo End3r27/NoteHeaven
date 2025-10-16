@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const { query, language = 'en' } = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -55,6 +55,14 @@ serve(async (req) => {
       `ID: ${note.id}\nTitle: ${note.title}\nContent: ${note.body}`
     ).join('\n\n---\n\n');
 
+    const systemPrompt = language === 'it'
+      ? 'Sei un assistente di ricerca semantica. Data una query di ricerca e un elenco di note, restituisci gli ID delle note semanticamente correlate alla query, ordinati per rilevanza. Restituisci SOLO un array JSON di ID di note, nient\'altro. Esempio: ["id1", "id2", "id3"]'
+      : 'You are a semantic search assistant. Given a search query and a list of notes, return the IDs of notes that are semantically related to the query, ordered by relevance. Return ONLY a JSON array of note IDs, nothing else. Example: ["id1", "id2", "id3"]';
+
+    const userPrompt = language === 'it'
+      ? `Query di ricerca: "${query}"\n\nNote:\n${notesContext}`
+      : `Search query: "${query}"\n\nNotes:\n${notesContext}`;
+
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -66,11 +74,11 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a semantic search assistant. Given a search query and a list of notes, return the IDs of notes that are semantically related to the query, ordered by relevance. Return ONLY a JSON array of note IDs, nothing else. Example: ["id1", "id2", "id3"]'
+            content: systemPrompt
           },
           { 
             role: 'user', 
-            content: `Search query: "${query}"\n\nNotes:\n${notesContext}` 
+            content: userPrompt
           }
         ],
       }),

@@ -42,7 +42,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
   const [semanticResults, setSemanticResults] = useState<Note[]>([]);
   const [searchingSemantics, setSearchingSemantics] = useState(false);
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     fetchFolders();
@@ -293,7 +293,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
     setSearchingSemantics(true);
     try {
       const { data, error } = await supabase.functions.invoke('semantic-search', {
-        body: { query }
+        body: { query, language }
       });
 
       if (error) throw error;

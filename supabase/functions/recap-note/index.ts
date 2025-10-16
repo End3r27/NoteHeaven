@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { noteId } = await req.json();
+    const { noteId, language = 'en' } = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -46,6 +46,14 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    const systemPrompt = language === 'it'
+      ? 'Sei un assistente utile che crea riepiloghi concisi delle note. Fornisci un breve riepilogo di 2-3 frasi che evidenzia i punti chiave e le idee principali. Rispondi sempre in italiano.'
+      : 'You are a helpful assistant that creates concise recaps of notes. Provide a brief 2-3 sentence summary highlighting the key points and main ideas. Always respond in English.';
+
+    const userPrompt = language === 'it'
+      ? `Per favore crea un breve riepilogo di questa nota:\n\nTitolo: ${note.title}\n\nContenuto: ${note.body}`
+      : `Please create a brief recap of this note:\n\nTitle: ${note.title}\n\nContent: ${note.body}`;
+
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -57,11 +65,11 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a helpful assistant that creates concise recaps of notes. Provide a brief 2-3 sentence summary highlighting the key points and main ideas.'
+            content: systemPrompt
           },
           { 
             role: 'user', 
-            content: `Please create a brief recap of this note:\n\nTitle: ${note.title}\n\nContent: ${note.body}` 
+            content: userPrompt
           }
         ],
       }),

@@ -44,7 +44,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   const [allTags, setAllTags] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState("");
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     setTitle(note.title);
@@ -88,7 +88,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
     setLoadingRecap(true);
     try {
       const { data, error } = await supabase.functions.invoke('recap-note', {
-        body: { noteId: note.id }
+        body: { noteId: note.id, language }
       });
 
       if (error) throw error;
@@ -123,7 +123,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
     setLoadingTags(true);
     try {
       const { data, error } = await supabase.functions.invoke('suggest-tags', {
-        body: { title, body }
+        body: { title, body, language }
       });
 
       if (error) throw error;

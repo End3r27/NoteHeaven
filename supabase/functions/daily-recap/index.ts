@@ -12,6 +12,8 @@ serve(async (req) => {
   }
 
   try {
+    const { language = 'en' } = await req.json();
+    
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
@@ -60,6 +62,14 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    const systemPrompt = language === 'it'
+      ? 'Sei un assistente utile che crea riepiloghi giornalieri dell\'attività di annotazione. Riassumi su cosa ha lavorato l\'utente oggi, evidenzia i temi chiave, le intuizioni importanti e fornisci una panoramica organizzata della loro produttività. Sii incoraggiante e perspicace. Rispondi sempre in italiano.'
+      : 'You are a helpful assistant that creates daily recaps of note-taking activity. Summarize what the user worked on today, highlight key themes, important insights, and provide an organized overview of their productivity. Be encouraging and insightful. Always respond in English.';
+
+    const userPrompt = language === 'it'
+      ? `Crea un riepilogo giornaliero per queste note delle ultime 24 ore:\n\n${notesText}`
+      : `Create a daily recap for these notes from the last 24 hours:\n\n${notesText}`;
+
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -71,11 +81,11 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a helpful assistant that creates daily recaps of note-taking activity. Summarize what the user worked on today, highlight key themes, important insights, and provide an organized overview of their productivity. Be encouraging and insightful.'
+            content: systemPrompt
           },
           { 
             role: 'user', 
-            content: `Create a daily recap for these notes from the last 24 hours:\n\n${notesText}` 
+            content: userPrompt
           }
         ],
       }),

@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { type, folderId, tagName } = await req.json();
+    const { type, folderId, tagName, language = 'en' } = await req.json();
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -124,10 +124,18 @@ serve(async (req) => {
     }
 
     let systemPrompt = '';
+    const languageInstruction = language === 'it' 
+      ? 'Rispondi sempre in italiano.' 
+      : 'Always respond in English.';
+    
     if (type === 'recent') {
-      systemPrompt = 'You are a helpful assistant that creates concise recaps of recent note-taking activity. Summarize the main themes, topics covered, and highlight any important insights or patterns. Keep it organized and easy to scan.';
+      systemPrompt = language === 'it'
+        ? 'Sei un assistente utile che crea riepiloghi concisi delle attività recenti di annotazione. Riassumi i temi principali, gli argomenti trattati ed evidenzia eventuali intuizioni o modelli importanti. Mantienilo organizzato e facile da scansionare. Rispondi sempre in italiano.'
+        : 'You are a helpful assistant that creates concise recaps of recent note-taking activity. Summarize the main themes, topics covered, and highlight any important insights or patterns. Keep it organized and easy to scan. Always respond in English.';
     } else if (type === 'folder' || type === 'tag') {
-      systemPrompt = 'You are a helpful assistant that creates organized summaries of related notes. Identify common themes, key insights, and provide a cohesive overview. Structure your summary with clear sections if appropriate.';
+      systemPrompt = language === 'it'
+        ? 'Sei un assistente utile che crea riepiloghi organizzati di note correlate. Identifica temi comuni, intuizioni chiave e fornisci una panoramica coerente. Struttura il tuo riepilogo con sezioni chiare se appropriato. Rispondi sempre in italiano.'
+        : 'You are a helpful assistant that creates organized summaries of related notes. Identify common themes, key insights, and provide a cohesive overview. Structure your summary with clear sections if appropriate. Always respond in English.';
     }
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
