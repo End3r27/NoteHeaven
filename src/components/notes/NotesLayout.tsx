@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { NotesSidebar } from "./NotesSidebar";
@@ -9,6 +8,7 @@ import { AIInsights } from "./AIInsights";
 import { RelatedNotes } from "./RelatedNotes";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/components/language/LanguageProvider";
+import { supabase as supabaseClient } from "@/integrations/supabase/client";
 
 interface Note {
   id: string;
@@ -30,7 +30,7 @@ interface Tag {
   name: string;
 }
 
-export function NotesLayout({ user }: { user: User }) {
+export function NotesLayout({ user }: { user: { id: string } }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -271,7 +271,18 @@ export function NotesLayout({ user }: { user: User }) {
           onSelectFolder={setSelectedFolder}
           onCreateFolder={createFolder}
           onDeleteFolder={deleteFolder}
-          user={user}
+          onMoveNoteToFolder={async (noteId, folderId) => {
+            try {
+              const { error } = await supabaseClient.from('notes').update({ folder_id: folderId }).eq('id', noteId);
+              if (error) throw error;
+              setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, folder_id: folderId } : n));
+              if (selectedNote?.id === noteId) {
+                setSelectedNote({ ...(selectedNote as Note), folder_id: folderId });
+              }
+            } catch (err: any) {
+              toast({ title: "Error", description: err.message || "Failed to move note", variant: "destructive" });
+            }
+          }}
         />
         <div className="flex-1 flex flex-col">
           <NotesHeader
@@ -292,6 +303,11 @@ export function NotesLayout({ user }: { user: User }) {
                       <button
                         key={note.id}
                         onClick={() => setSelectedNote(note)}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/note-id", note.id);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
                         className={`w-full text-left p-3 rounded-lg transition-colors ${
                           selectedNote?.id === note.id
                             ? "bg-primary/10 text-primary"

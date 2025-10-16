@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
@@ -42,7 +41,7 @@ interface NotesSidebarProps {
   onSelectFolder: (id: string | null) => void;
   onCreateFolder: (name: string) => void;
   onDeleteFolder: (id: string) => void;
-  user: User;
+  onMoveNoteToFolder?: (noteId: string, folderId: string | null) => void;
 }
 
 export function NotesSidebar({
@@ -52,7 +51,7 @@ export function NotesSidebar({
   onSelectFolder,
   onCreateFolder,
   onDeleteFolder,
-  user,
+  onMoveNoteToFolder,
 }: NotesSidebarProps) {
   const [newFolderName, setNewFolderName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -86,7 +85,7 @@ export function NotesSidebar({
             <SidebarGroupLabel>{t("sidebar.folders")}</SidebarGroupLabel>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Button className="h-6 w-6 p-0">
                   <Plus className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
@@ -114,6 +113,11 @@ export function NotesSidebar({
                 <SidebarMenuButton
                   onClick={() => onSelectFolder(null)}
                   isActive={selectedFolder === null}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    const noteId = e.dataTransfer.getData("text/note-id");
+                    if (noteId && onMoveNoteToFolder) onMoveNoteToFolder(noteId, null);
+                  }}
                 >
                   <Folder className="h-4 w-4" />
                   <span>{t("sidebar.all_notes")}</span>
@@ -124,12 +128,15 @@ export function NotesSidebar({
                   <SidebarMenuButton
                     onClick={() => onSelectFolder(folder.id)}
                     isActive={selectedFolder === folder.id}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      const noteId = e.dataTransfer.getData("text/note-id");
+                      if (noteId && onMoveNoteToFolder) onMoveNoteToFolder(noteId, folder.id);
+                    }}
                   >
                     <Folder className="h-4 w-4" />
                     <span>{folder.name}</span>
                     <Button
-                      variant="ghost"
-                      size="sm"
                       className="ml-auto h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -162,7 +169,7 @@ export function NotesSidebar({
         </SidebarGroup>
       </SidebarContent>
       <div className="border-t border-sidebar-border p-4">
-        <Button variant="ghost" onClick={handleLogout} className="w-full justify-start">
+        <Button onClick={handleLogout} className="w-full justify-start">
           <LogOut className="h-4 w-4 mr-2" />
           {t("sidebar.sign_out")}
         </Button>

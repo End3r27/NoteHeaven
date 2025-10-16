@@ -46,6 +46,11 @@ const translations = {
     "editor.generating": "Generating...",
     "editor.suggest_tags": "Suggest Tags",
     "editor.suggesting": "Suggesting...",
+    "editor.save_tags": "Save Tags",
+    "editor.tags": "Tags",
+    "editor.add_tag": "Add Tag",
+    "editor.add_tag_placeholder": "New tag name",
+    "editor.remove_tag": "Remove",
     "editor.delete": "Delete",
     "editor.last_edited": "Last edited:",
     
@@ -147,6 +152,11 @@ const translations = {
     "editor.generating": "Generazione...",
     "editor.suggest_tags": "Suggerisci tag",
     "editor.suggesting": "Suggerimento...",
+    "editor.save_tags": "Salva tag",
+    "editor.tags": "Tag",
+    "editor.add_tag": "Aggiungi tag",
+    "editor.add_tag_placeholder": "Nome nuovo tag",
+    "editor.remove_tag": "Rimuovi",
     "editor.delete": "Elimina",
     "editor.last_edited": "Ultima modifica:",
     

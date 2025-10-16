@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Trash2, Save, Sparkles, Tag as TagIcon } from "lucide-react";
@@ -7,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface Note {
@@ -38,6 +38,10 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
   const [loadingRecap, setLoadingRecap] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [loadingTags, setLoadingTags] = useState(false);
+  const [savingTags, setSavingTags] = useState(false);
+  const [noteTags, setNoteTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState("");
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -47,6 +51,20 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
     setHasChanges(false);
     setRecap("");
     setSuggestedTags([]);
+    // Load note tags and all tags
+    (async () => {
+      const { data: existingLinks } = await supabase
+        .from('note_tags')
+        .select('tags(name)')
+        .eq('note_id', note.id);
+      setNoteTags((existingLinks || []).map((r: any) => r.tags?.name).filter(Boolean));
+
+      const { data: existing } = await supabase
+        .from('tags')
+        .select('name')
+        .eq('user_id', note.user_id);
+      setAllTags((existing || []).map((t: any) => t.name));
+    })();
   }, [note]);
 
   useEffect(() => {
@@ -126,6 +144,116 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
     }
   };
 
+  const saveSuggestedTags = async () => {
+    if (suggestedTags.length === 0) {
+      return;
+    }
+    setSavingTags(true);
+    try {
+      // Fetch existing tags for user
+      const { data: existingTags } = await supabase
+        .from('tags')
+        .select('id, name')
+        .eq('user_id', note.user_id);
+
+      const existingNameToId = new Map<string, string>((existingTags || []).map((t: any) => [t.name.toLowerCase(), t.id]));
+
+      const tagIds: string[] = [];
+      for (const tagName of suggestedTags) {
+        const key = tagName.toLowerCase();
+        if (existingNameToId.has(key)) {
+          tagIds.push(existingNameToId.get(key)!);
+          continue;
+        }
+        const { data: inserted, error: insertErr } = await supabase
+          .from('tags')
+          .insert({ name: tagName, user_id: note.user_id })
+          .select('id')
+          .single();
+        if (insertErr) throw insertErr;
+        tagIds.push(inserted.id);
+        existingNameToId.set(key, inserted.id);
+      }
+
+      // Link tags to note; avoid duplicates
+      const { data: existingLinks } = await supabase
+        .from('note_tags')
+        .select('tag_id')
+        .eq('note_id', note.id);
+      const linked = new Set<string>((existingLinks || []).map((r: any) => r.tag_id));
+
+      const newLinks = tagIds
+        .filter((id) => !linked.has(id))
+        .map((id) => ({ note_id: note.id, tag_id: id }));
+
+      if (newLinks.length > 0) {
+        const { error: linkErr } = await supabase.from('note_tags').insert(newLinks);
+        if (linkErr) throw linkErr;
+      }
+
+      toast({ title: t('insights.toast.summary_generated.title'), description: t('insights.toast.summary_generated.desc').replace('{count}', String(suggestedTags.length)) });
+      // Refresh local tags
+      const { data: refreshed } = await supabase
+        .from('note_tags')
+        .select('tags(name)')
+        .eq('note_id', note.id);
+      setNoteTags((refreshed || []).map((r: any) => r.tags?.name).filter(Boolean));
+    } catch (error: any) {
+      toast({ title: t('insights.toast.error.title'), description: error.message || 'Failed to save tags', variant: 'destructive' });
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
+  const addTagToNote = async (tagName: string) => {
+    try {
+      // ensure tag exists
+      const { data: tagRow } = await supabase
+        .from('tags')
+        .select('id')
+        .eq('user_id', note.user_id)
+        .eq('name', tagName)
+        .single();
+      let tagId = tagRow?.id as string | undefined;
+      if (!tagId) {
+        const { data: inserted, error } = await supabase
+          .from('tags')
+          .insert({ name: tagName, user_id: note.user_id })
+          .select('id')
+          .single();
+        if (error) throw error;
+        tagId = inserted.id;
+      }
+      const { error: linkErr } = await supabase.from('note_tags').insert({ note_id: note.id, tag_id: tagId });
+      if (linkErr) throw linkErr;
+      setNoteTags((prev) => Array.from(new Set([...prev, tagName])));
+      if (!allTags.includes(tagName)) setAllTags((prev) => [...prev, tagName]);
+    } catch (e: any) {
+      toast({ title: t('insights.toast.error.title'), description: e.message || 'Failed to add tag', variant: 'destructive' });
+    }
+  };
+
+  const removeTagFromNote = async (tagName: string) => {
+    try {
+      const { data: tagRow } = await supabase
+        .from('tags')
+        .select('id')
+        .eq('user_id', note.user_id)
+        .eq('name', tagName)
+        .single();
+      if (!tagRow?.id) return;
+      const { error } = await supabase
+        .from('note_tags')
+        .delete()
+        .eq('note_id', note.id)
+        .eq('tag_id', tagRow.id);
+      if (error) throw error;
+      setNoteTags((prev) => prev.filter((t) => t !== tagName));
+    } catch (e: any) {
+      toast({ title: t('insights.toast.error.title'), description: e.message || 'Failed to remove tag', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="border-b border-border p-4 flex items-center gap-2">
@@ -156,6 +284,12 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
           <TagIcon className="h-4 w-4 mr-2" />
           {loadingTags ? t("editor.suggesting") : t("editor.suggest_tags")}
         </Button>
+        {suggestedTags.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={saveSuggestedTags} disabled={savingTags}>
+            <TagIcon className="h-4 w-4 mr-2" />
+            {savingTags ? t('insights.generating') : t('editor.save_tags')}
+          </Button>
+        )}
         <Button variant="ghost" size="sm" onClick={handleDelete}>
           <Trash2 className="h-4 w-4 mr-2" />
           {t("editor.delete")}
@@ -212,6 +346,52 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
             className="min-h-[500px] border-none p-0 focus-visible:ring-0 resize-none text-base"
             placeholder={t("editor.start_writing")}
           />
+
+          <div className="pt-4 border-t">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium">{t('editor.tags')}</h4>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  placeholder={t('editor.add_tag_placeholder')}
+                  className="h-8"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newTagName.trim()) {
+                      addTagToNote(newTagName.trim());
+                      setNewTagName('');
+                    }
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (newTagName.trim()) {
+                      addTagToNote(newTagName.trim());
+                      setNewTagName('');
+                    }
+                  }}
+                >
+                  {t('editor.add_tag')}
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {noteTags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                  {tag}
+                  <button
+                    className="ml-1 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => removeTagFromNote(tag)}
+                    aria-label={t('editor.remove_tag')}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
