@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface Node {
   id: string;
@@ -30,6 +31,7 @@ export default function GraphView() {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchGraphData();
@@ -143,7 +145,7 @@ export default function GraphView() {
       setGraphData({ nodes, links });
     } catch (error: any) {
       toast({
-        title: "Error loading graph",
+        title: t("graph.error_loading"),
         description: error.message,
         variant: "destructive",
       });
@@ -283,32 +285,32 @@ export default function GraphView() {
       <header className="border-b border-border h-14 flex items-center px-4 gap-4">
         <Button onClick={() => navigate("/notes")} variant="ghost" size="sm">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Notes
+          {t("graph.back_to_notes")}
         </Button>
-        <h1 className="text-lg font-semibold">Notes Graph</h1>
+        <h1 className="text-lg font-semibold">{t("graph.title")}</h1>
         <div className="ml-auto flex items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-primary"></div>
-            <span>Notes</span>
+            <span>{t("graph.legend.notes")}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-chart-2"></div>
-            <span>Folders</span>
+            <span>{t("graph.legend.folders")}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-accent"></div>
-            <span>Tags</span>
+            <span>{t("graph.legend.tags")}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-0.5 bg-primary" style={{ width: '20px' }}></div>
-            <span>Related</span>
+            <span>{t("graph.legend.related")}</span>
           </div>
         </div>
       </header>
       <div className="flex-1 relative">
         {graphData.nodes.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-            No notes to display. Create some notes to see the graph.
+            {t("graph.empty")}
           </div>
         ) : (
           <svg ref={svgRef} className="w-full h-full" />

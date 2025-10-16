@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Loader2, FolderOpen, Tag } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface Folder {
   id: string;
@@ -29,6 +30,7 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
   const [selectedFolder, setSelectedFolder] = useState<string>("");
   const [selectedTag, setSelectedTag] = useState<string>("");
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const generateSummary = async (type: 'recent' | 'folder' | 'tag', identifier?: string) => {
     setLoading(true);
@@ -52,25 +54,42 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
 
       if (data.error) {
         toast({
-          title: "Error",
+          title: t("insights.toast.error.title"),
           description: data.error,
           variant: "destructive",
         });
         return;
       }
 
+      // Handle empty results with localized messages
+      const count = data.noteCount || 0;
+      if (count === 0) {
+        let emptyMsg = "";
+        if (type === 'recent') {
+          emptyMsg = t("insights.empty.recent");
+        } else if (type === 'folder') {
+          const folderName = folders.find((f) => f.id === identifier)?.name || "";
+          emptyMsg = t("insights.empty.folder").replace("{name}", folderName);
+        } else if (type === 'tag') {
+          emptyMsg = t("insights.empty.tag").replace("{name}", identifier || "");
+        }
+        setSummary(emptyMsg);
+        setNoteCount(0);
+        return;
+      }
+
       setSummary(data.summary);
-      setNoteCount(data.noteCount || 0);
+      setNoteCount(count);
       
       toast({
-        title: "Summary Generated",
-        description: `Analyzed ${data.noteCount || 0} notes`,
+        title: t("insights.toast.summary_generated.title"),
+        description: t("insights.toast.summary_generated.desc").replace("{count}", String(count)),
       });
     } catch (error) {
       console.error('Error generating summary:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate summary. Please try again.",
+        title: t("insights.toast.error.title"),
+        description: t("insights.toast.error.desc"),
         variant: "destructive",
       });
     } finally {
@@ -82,22 +101,22 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-2">
         <Sparkles className="h-6 w-6 text-primary" />
-        <h2 className="text-2xl font-bold">AI Insights</h2>
+        <h2 className="text-2xl font-bold">{t("insights.title")}</h2>
       </div>
 
       <Tabs defaultValue="recent" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="recent">Recent Activity</TabsTrigger>
-          <TabsTrigger value="folder">By Folder</TabsTrigger>
-          <TabsTrigger value="tag">By Tag</TabsTrigger>
+          <TabsTrigger value="recent">{t("insights.tab.recent")}</TabsTrigger>
+          <TabsTrigger value="folder">{t("insights.tab.folder")}</TabsTrigger>
+          <TabsTrigger value="tag">{t("insights.tab.tag")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="recent" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Activity Recap</CardTitle>
+              <CardTitle>{t("insights.recent.title")}</CardTitle>
               <CardDescription>
-                Get an AI-generated summary of your recent notes and activity
+                {t("insights.recent.desc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -109,12 +128,12 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    {t("insights.generating")}
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Recap
+                    {t("insights.generate_recap")}
                   </>
                 )}
               </Button>
@@ -125,15 +144,15 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
         <TabsContent value="folder" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Folder Summary</CardTitle>
+              <CardTitle>{t("insights.folder.title")}</CardTitle>
               <CardDescription>
-                Summarize all notes within a specific folder
+                {t("insights.folder.desc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Select value={selectedFolder} onValueChange={setSelectedFolder}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a folder" />
+                  <SelectValue placeholder={t("insights.folder.select_placeholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {folders.map((folder) => (
@@ -155,12 +174,12 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    {t("insights.generating")}
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Summary
+                    {t("insights.generate_summary")}
                   </>
                 )}
               </Button>
@@ -171,15 +190,15 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
         <TabsContent value="tag" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Tag Summary</CardTitle>
+              <CardTitle>{t("insights.tag.title")}</CardTitle>
               <CardDescription>
-                Summarize all notes with a specific tag
+                {t("insights.tag.desc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Select value={selectedTag} onValueChange={setSelectedTag}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a tag" />
+                  <SelectValue placeholder={t("insights.tag.select_placeholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {tags.map((tag) => (
@@ -201,12 +220,12 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    {t("insights.generating")}
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Summary
+                    {t("insights.generate_summary")}
                   </>
                 )}
               </Button>
@@ -219,10 +238,12 @@ export function AIInsights({ folders, tags }: AIInsightsProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              Summary
+              {t("insights.summary.header")}
               {noteCount > 0 && (
                 <span className="text-sm font-normal text-muted-foreground">
-                  {noteCount} {noteCount === 1 ? 'note' : 'notes'} analyzed
+                  {noteCount === 1
+                    ? t("insights.summary.analyzed_one").replace("{count}", String(noteCount))
+                    : t("insights.summary.analyzed_many").replace("{count}", String(noteCount))}
                 </span>
               )}
             </CardTitle>

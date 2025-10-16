@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Sparkles, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface Note {
   id: string;
@@ -20,6 +21,7 @@ const DailyRecap = () => {
   const [noteCount, setNoteCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     generateDailyRecap();
@@ -38,8 +40,8 @@ const DailyRecap = () => {
     } catch (error: any) {
       console.error('Error generating daily recap:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to generate daily recap",
+        title: t("daily.error.title"),
+        description: error.message || t("daily.error.desc"),
         variant: "destructive",
       });
     } finally {
@@ -57,14 +59,14 @@ const DailyRecap = () => {
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Notes
+            {t("daily.back_to_notes")}
           </Button>
           <div className="flex items-center gap-3 mb-2">
             <Calendar className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Daily Recap</h1>
+            <h1 className="text-3xl font-bold">{t("daily.title")}</h1>
           </div>
           <p className="text-muted-foreground">
-            A summary of your notes from the last 24 hours
+            {t("daily.subtitle")}
           </p>
         </div>
 
@@ -73,7 +75,7 @@ const DailyRecap = () => {
             <CardContent className="py-12">
               <div className="flex flex-col items-center gap-4">
                 <Sparkles className="h-8 w-8 animate-pulse text-primary" />
-                <p className="text-muted-foreground">Generating your daily recap...</p>
+                <p className="text-muted-foreground">{t("daily.generating")}</p>
               </div>
             </CardContent>
           </Card>
@@ -83,10 +85,12 @@ const DailyRecap = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  AI Summary
+                  {t("daily.ai_summary")}
                 </CardTitle>
                 <CardDescription>
-                  {noteCount} {noteCount === 1 ? 'note' : 'notes'} analyzed
+                  {noteCount === 1
+                    ? t("daily.analyzed_one").replace("{count}", String(noteCount))
+                    : t("daily.analyzed_many").replace("{count}", String(noteCount))}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -101,9 +105,9 @@ const DailyRecap = () => {
             {notes.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Today's Notes</CardTitle>
+                  <CardTitle>{t("daily.todays_notes")}</CardTitle>
                   <CardDescription>
-                    All notes created or updated in the last 24 hours
+                    {t("daily.todays_notes_desc")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -116,10 +120,10 @@ const DailyRecap = () => {
                       >
                         <h3 className="font-semibold mb-1">{note.title}</h3>
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {note.body || "No content"}
+                          {note.body || t("daily.no_content")}
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          Updated: {new Date(note.updated_at).toLocaleString()}
+                          {t("daily.updated")} {new Date(note.updated_at).toLocaleString()}
                         </p>
                       </div>
                     ))}

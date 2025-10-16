@@ -8,6 +8,7 @@ import { NoteEditor } from "./NoteEditor";
 import { AIInsights } from "./AIInsights";
 import { RelatedNotes } from "./RelatedNotes";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface Note {
   id: string;
@@ -41,6 +42,7 @@ export function NotesLayout({ user }: { user: User }) {
   const [semanticResults, setSemanticResults] = useState<Note[]>([]);
   const [searchingSemantics, setSearchingSemantics] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchFolders();
@@ -315,7 +317,7 @@ export function NotesLayout({ user }: { user: User }) {
                       />
                     ) : (
                       <div className="h-full flex items-center justify-center text-muted-foreground">
-                        Select a note or create a new one
+                        {t("notes.select_or_create")}
                       </div>
                     )}
                   </div>

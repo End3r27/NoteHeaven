@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface Note {
   id: string;
@@ -38,6 +39,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [loadingTags, setLoadingTags] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     setTitle(note.title);
@@ -134,7 +136,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
           disabled={!hasChanges}
         >
           <Save className="h-4 w-4 mr-2" />
-          {hasChanges ? "Save" : "Saved"}
+          {hasChanges ? t("editor.save") : t("editor.saved")}
         </Button>
         <Button 
           variant="ghost" 
@@ -143,7 +145,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
           disabled={loadingRecap}
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          {loadingRecap ? "Generating..." : "Recap"}
+          {loadingRecap ? t("editor.generating") : t("editor.recap")}
         </Button>
         <Button 
           variant="ghost" 
@@ -152,14 +154,14 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
           disabled={loadingTags}
         >
           <TagIcon className="h-4 w-4 mr-2" />
-          {loadingTags ? "Suggesting..." : "Suggest Tags"}
+          {loadingTags ? t("editor.suggesting") : t("editor.suggest_tags")}
         </Button>
         <Button variant="ghost" size="sm" onClick={handleDelete}>
           <Trash2 className="h-4 w-4 mr-2" />
-          Delete
+          {t("editor.delete")}
         </Button>
         <div className="text-xs text-muted-foreground ml-auto">
-          Last edited: {new Date(note.updated_at).toLocaleDateString()}
+          {t("editor.last_edited")} {new Date(note.updated_at).toLocaleDateString()}
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-6">
@@ -208,7 +210,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags }: NoteEditorProps) 
             value={body}
             onChange={(e) => setBody(e.target.value)}
             className="min-h-[500px] border-none p-0 focus-visible:ring-0 resize-none text-base"
-            placeholder="Start writing..."
+            placeholder={t("editor.start_writing")}
           />
         </div>
       </div>

@@ -68,7 +68,7 @@ export function NotesHeader({
       </Button>
       <Button onClick={() => navigate('/graph')} size="sm" variant="outline">
         <Network className="h-4 w-4 mr-2" />
-        Graph
+        {t("notes.graph")}
       </Button>
       <Button onClick={onCreateNote} size="sm">
         <Plus className="h-4 w-4 mr-2" />

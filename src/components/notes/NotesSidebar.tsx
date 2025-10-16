@@ -16,6 +16,7 @@ import {
 import { Folder, Tag, LogOut, Plus, Trash2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/components/language/LanguageProvider";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,7 @@ export function NotesSidebar({
   const [newFolderName, setNewFolderName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
@@ -81,7 +83,7 @@ export function NotesSidebar({
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center justify-between px-2">
-            <SidebarGroupLabel>Folders</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("sidebar.folders")}</SidebarGroupLabel>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -90,17 +92,17 @@ export function NotesSidebar({
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create New Folder</DialogTitle>
+                  <DialogTitle>{t("sidebar.create_new_folder")}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <Input
-                    placeholder="Folder name"
+                    placeholder={t("sidebar.folder_name_placeholder")}
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
                   />
                   <Button onClick={handleCreateFolder} className="w-full">
-                    Create Folder
+                    {t("sidebar.create_folder")}
                   </Button>
                 </div>
               </DialogContent>
@@ -114,7 +116,7 @@ export function NotesSidebar({
                   isActive={selectedFolder === null}
                 >
                   <Folder className="h-4 w-4" />
-                  <span>All Notes</span>
+                  <span>{t("sidebar.all_notes")}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {folders.map((folder) => (
@@ -144,7 +146,7 @@ export function NotesSidebar({
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Tags</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("sidebar.tags")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {tags.map((tag) => (
@@ -162,7 +164,7 @@ export function NotesSidebar({
       <div className="border-t border-sidebar-border p-4">
         <Button variant="ghost" onClick={handleLogout} className="w-full justify-start">
           <LogOut className="h-4 w-4 mr-2" />
-          Sign out
+          {t("sidebar.sign_out")}
         </Button>
       </div>
     </Sidebar>
