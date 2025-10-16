@@ -1,7 +1,6 @@
-project_id = "vnvhnroqzutlcsyxyyaq"
+project_id = "iamnhsskgjpzwvwpgyja"
 
 [functions]
-enabled = true
 
 [functions.summarize-notes]
 verify_jwt = true
