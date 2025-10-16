@@ -82,7 +82,7 @@ serve(async (req) => {
 
     console.log(`Making AI request for related notes for note ${noteId}, language: ${language}`);
 
-    const model = 'gemini-1.5-flash-latest';
+    const model = 'gemini-2.5-flash';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_AI_API_KEY}`;
 
     const aiResponse = await fetch(url, {
