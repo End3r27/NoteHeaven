@@ -150,25 +150,28 @@ serve(async (req) => {
         : 'You are a helpful assistant that creates organized summaries of related notes. Identify common themes, key insights, and provide a cohesive overview. Structure your summary with clear sections if appropriate. Always respond in English.';
     }
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const userPrompt = `Please summarize these ${summaryContext}:\n\n${notesText}`;
+
+    console.log(`Making AI request for ${type} summary, language: ${language}, notes count: ${notes.length}`);
+
+    const model = 'gemini-1.5-flash';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_AI_API_KEY}`;
+
+    const aiResponse = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GOOGLE_AI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gemini-1.5-flash-latest',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { 
-            role: 'user', 
-            content: `Please summarize these ${summaryContext}:\n\n${notesText}` 
-          }
-        ],
+        contents: [{
+          role: 'user',
+          parts: [{ text: userPrompt }]
+        }],
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        }
       }),
     });
-
-    console.log(`Making AI request for ${type} summary, language: ${language}, notes count: ${notes.length}`);
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
