@@ -136,10 +136,6 @@ serve(async (req) => {
     }
 
     let systemPrompt = '';
-    const languageInstruction = language === 'it' 
-      ? 'Rispondi sempre in italiano.' 
-      : 'Always respond in English.';
-    
     if (type === 'recent') {
       systemPrompt = language === 'it'
         ? 'Sei un assistente utile che crea riepiloghi concisi delle attività recenti di annotazione. Riassumi i temi principali, gli argomenti trattati ed evidenzia eventuali intuizioni o modelli importanti. Mantienilo organizzato e facile da scansionare. Rispondi sempre in italiano.'
@@ -176,13 +172,6 @@ serve(async (req) => {
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI gateway error:', aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), // This might be different for Google's API
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       
       // Include more specific error information
       const errorMessage = `AI gateway error (${aiResponse.status}): ${errorText}`;

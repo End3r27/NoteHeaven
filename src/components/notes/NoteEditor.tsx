@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Trash2, Save, Sparkles, Tag as TagIcon } from "lucide-react";
+import { Trash2, Save, Sparkles, Tag as TagIcon, Upload, File as FileIcon, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,16 @@ interface Note {
   folder_id: string | null;
   created_at: string;
   updated_at: string;
+  user_id: string;
+}
+
+interface Attachment {
+  id: string;
+  filename: string;
+  file_url: string;
+  filesize: number;
+  uploaded_at: string;
+  note_id: string | null;
 }
 
 interface Tag {
@@ -42,9 +52,13 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   const [savingTags, setSavingTags] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const { toast } = useToast();
   const { t, language } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTitle(note.title);
@@ -52,6 +66,8 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
     setHasChanges(false);
     setRecap("");
     setSuggestedTags([]);
+    fetchAttachments();
+
     // Load note tags and all tags
     (async () => {
       const { data: existingLinks } = await supabase
@@ -66,7 +82,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
         .eq('user_id', note.user_id);
       setAllTags((existing || []).map((t: any) => t.name));
     })();
-  }, [note]);
+  }, [note]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const changed = title !== note.title || body !== note.body;
@@ -78,11 +94,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
     setHasChanges(false);
   };
 
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this note?")) {
-      onDelete(note.id);
-    }
-  };
+  const handleDelete = () => onDelete(note.id);
 
   const generateRecap = async () => {
     setLoadingRecap(true);
@@ -257,6 +269,125 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
     }
   };
 
+  const fetchAttachments = async () => {
+    const { data, error } = await supabase
+      .from('attachments')
+      .select('*')
+      .eq('note_id', note.id)
+      .order('uploaded_at', { ascending: true });
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to load attachments", variant: "destructive" });
+    } else {
+      setAttachments(data || []);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (file.size > 50 * 1024 * 1024) { // 50MB limit
+      toast({ title: "Error", description: "File is too large (max 50MB)", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('noteId', note.id);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('upload-attachment', {
+        body: formData,
+      });
+
+      if (error) throw new Error(error.message);
+
+      setAttachments([...attachments, data]);
+      toast({ title: "Success", description: "File uploaded successfully" });
+      if (onTagsChange) onTagsChange(); // This will trigger a profile update in NotesLayout
+    } catch (error: any) {
+      toast({ title: "Upload Error", description: error.message || "Failed to upload file", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    const attachment = attachments.find(a => a.id === attachmentId);
+    if (!attachment) return;
+
+    try {
+      // Delete from storage
+      const filePath = attachment.file_url.split('/attachments/')[1];
+      const { error: storageError } = await supabase.storage.from('attachments').remove([filePath]);
+      if (storageError) throw storageError;
+
+      // Delete from database (trigger will update used_storage)
+      const { error: dbError } = await supabase.from('attachments').delete().eq('id', attachmentId);
+      if (dbError) throw dbError;
+
+      setAttachments(attachments.filter(a => a.id !== attachmentId));
+      toast({ title: "Success", description: "Attachment deleted" });
+      if (onTagsChange) onTagsChange(); // Trigger profile update
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to delete attachment", variant: "destructive" });
+    }
+  };
+
+  const handleDownloadAttachment = async (att: Attachment) => {
+    try {
+      if (!att.file_url) throw new Error('No file URL');
+      const filePath = att.file_url.split('/attachments/')[1];
+      if (!filePath) throw new Error('Invalid file path');
+
+      const { data, error } = await supabase.storage.from('attachments').download(filePath);
+      if (error || !data) throw error || new Error('Failed to download file');
+
+      // data is a Blob
+      const blob = data as Blob;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = att.filename || 'download';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || 'Failed to download file', variant: 'destructive' });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(e.dataTransfer.files[0]);
+      e.dataTransfer.clearData();
+    }
+  };
+
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="border-b border-border p-4 flex items-center gap-2">
@@ -279,21 +410,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
           {loadingRecap ? t("editor.generating") : t("editor.recap")}
         </Button>
         <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={generateTagSuggestions}
-          disabled={loadingTags}
-        >
-          <TagIcon className="h-4 w-4 mr-2" />
-          {loadingTags ? t("editor.suggesting") : t("editor.suggest_tags")}
-        </Button>
-        {suggestedTags.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={saveSuggestedTags} disabled={savingTags}>
-            <TagIcon className="h-4 w-4 mr-2" />
-            {savingTags ? t('insights.generating') : t('editor.save_tags')}
-          </Button>
-        )}
-        <Button variant="ghost" size="sm" onClick={handleDelete}>
+          variant="ghost" size="sm" onClick={handleDelete}>
           <Trash2 className="h-4 w-4 mr-2" />
           {t("editor.delete")}
         </Button>
@@ -301,7 +418,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
           {t("editor.last_edited")} {new Date(note.updated_at).toLocaleDateString()}
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         <div className="max-w-3xl mx-auto space-y-4">
           {recap && (
             <Card className="bg-primary/5">
@@ -317,24 +434,12 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
             </Card>
           )}
 
-          {suggestedTags.length > 0 && (
-            <Card className="bg-accent/50">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-2">
-                  <TagIcon className="h-5 w-5 text-primary mt-0.5" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-2">Suggested Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestedTags.map((tag, idx) => (
-                        <Badge key={idx} variant="secondary">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {isDragging && (
+            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 pointer-events-none">
+              <div className="bg-background p-8 rounded-lg border-2 border-dashed border-primary">
+                <p className="text-lg font-semibold">Drop file to upload</p>
+              </div>
+            </div>
           )}
 
           <Input
@@ -350,7 +455,27 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
             placeholder={t("editor.start_writing")}
           />
 
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t space-y-4">
+            {suggestedTags.length > 0 && (
+              <Card className="bg-accent/50 mb-4">
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-2">
+                    <TagIcon className="h-5 w-5 text-primary mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-2">Suggested Tags</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestedTags.map((tag, idx) => (
+                          <Badge key={idx} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium">{t('editor.tags')}</h4>
               <div className="flex items-center gap-2">
@@ -378,6 +503,21 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
                 >
                   {t('editor.add_tag')}
                 </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={generateTagSuggestions}
+                  disabled={loadingTags}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {loadingTags ? t("editor.suggesting") : t("editor.suggest_tags")}
+                </Button>
+                {suggestedTags.length > 0 && (
+                  <Button variant="default" size="sm" onClick={saveSuggestedTags} disabled={savingTags}>
+                    <TagIcon className="h-4 w-4 mr-2" />
+                    {savingTags ? t('insights.generating') : t('editor.save_tags')}
+                  </Button>
+                )}
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -393,6 +533,57 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
                   </button>
                 </Badge>
               ))}
+            </div>
+
+            {/* Attachments Section */}
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium">{t('editor.attachments')}</h4>
+                <div className="flex flex-col items-end gap-1">
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    {isUploading ? t('editor.uploading') : t('editor.upload_file')}
+                  </Button>
+                  {isUploading && (
+                    <div className="w-full mt-1">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-2 bg-primary animate-pulse w-full" style={{ width: '100%' }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={(e) => e.target.files && handleFileUpload(e.target.files[0])}
+                  className="hidden"
+                />
+              </div>
+              <div className="space-y-2">
+                {attachments.map(att => (
+                  <Card key={att.id} className="p-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileIcon className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium truncate">{att.filename}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatBytes(att.filesize)} - {new Date(att.uploaded_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleDownloadAttachment(att)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteAttachment(att.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { NotesSidebar } from "./NotesSidebar";
 import { NotesHeader } from "./NotesHeader";
 import { NoteEditor } from "./NoteEditor";
@@ -8,6 +8,7 @@ import { AIInsights } from "./AIInsights";
 import { RelatedNotes } from "./RelatedNotes";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/components/language/LanguageProvider";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
 
 interface Note {
@@ -17,6 +18,7 @@ interface Note {
   folder_id: string | null;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 interface Folder {
@@ -30,6 +32,12 @@ interface Tag {
   name: string;
 }
 
+interface Profile {
+  id: string;
+  email: string;
+  used_storage: number;
+}
+
 export function NotesLayout({ user }: { user: { id: string } }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -41,14 +49,23 @@ export function NotesLayout({ user }: { user: { id: string } }) {
   const [useSemanticSearch, setUseSemanticSearch] = useState(false);
   const [semanticResults, setSemanticResults] = useState<Note[]>([]);
   const [searchingSemantics, setSearchingSemantics] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
 
   useEffect(() => {
+    fetchProfile();
     fetchFolders();
     fetchTags();
     fetchNotes();
   }, []);
+
+  const fetchProfile = async () => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (error) console.error("Error fetching profile", error);
+    else setProfile(data);
+  }
 
   const fetchNotes = async () => {
     const { data, error } = await supabase
@@ -138,24 +155,34 @@ export function NotesLayout({ user }: { user: { id: string } }) {
   };
 
   const deleteNote = async (noteId: string) => {
-    const { error } = await supabase.from("notes").delete().eq("id", noteId);
+    setNoteToDelete(null);
+    try {
+      // First, get attachments to delete from storage
+      const { data: attachments } = await supabase.from('attachments').select('file_url').eq('note_id', noteId);
+      
+      // Then, delete the note itself (attachments in DB will be cascade-deleted)
+      const { error } = await supabase.from("notes").delete().eq("id", noteId);
+      if (error) throw error;
 
-    if (error) {
+      // Now, delete files from storage
+      if (attachments && attachments.length > 0) {
+        const filePaths = attachments.map(a => a.file_url.split('/attachments/')[1]);
+        await supabase.storage.from('attachments').remove(filePaths);
+      }
+
+      setNotes(notes.filter((n) => n.id !== noteId));
+      if (selectedNote?.id === noteId) setSelectedNote(null);
+      
+      // Refresh profile to get updated storage, and tags to remove unused ones
+      fetchProfile();
+      fetchTags();
+      
+      toast({ title: "Success", description: "Note and its attachments deleted" });
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to delete note",
+        description: error.message || "Failed to delete note",
         variant: "destructive",
-      });
-    } else {
-      setNotes(notes.filter((n) => n.id !== noteId));
-      if (selectedNote?.id === noteId) {
-        setSelectedNote(null);
-      }
-      // Refresh tags to remove any that are no longer used
-      fetchTags();
-      toast({
-        title: "Success",
-        description: "Note deleted",
       });
     }
   };
@@ -332,6 +359,8 @@ export function NotesLayout({ user }: { user: { id: string } }) {
           onSelectFolder={setSelectedFolder}
           onCreateFolder={createFolder}
           onDeleteFolder={deleteFolder}
+          profile={profile}
+          totalStorage={2 * 1024 * 1024 * 1024}
           onMoveNoteToFolder={async (noteId, folderId) => {
             try {
               const { error } = await supabaseClient.from('notes').update({ folder_id: folderId }).eq('id', noteId);
@@ -389,7 +418,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
                       <NoteEditor
                         note={selectedNote}
                         onUpdate={updateNote}
-                        onDelete={deleteNote}
+                        onDelete={setNoteToDelete}
                         tags={tags}
                         onTagsChange={fetchTags}
                       />
@@ -419,6 +448,20 @@ export function NotesLayout({ user }: { user: { id: string } }) {
             )}
           </div>
         </div>
+        <AlertDialog open={!!noteToDelete} onOpenChange={() => setNoteToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this note and all of its attachments.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => noteToDelete && deleteNote(noteToDelete)}>Continue</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </SidebarProvider>
   );

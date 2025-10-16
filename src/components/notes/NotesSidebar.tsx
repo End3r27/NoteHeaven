@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
@@ -53,10 +53,28 @@ export function NotesSidebar({
   onDeleteFolder,
   onMoveNoteToFolder,
 }: NotesSidebarProps) {
+
+  const [usedStorage, setUsedStorage] = useState<number>(0);
   const [newFolderName, setNewFolderName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const MAX_STORAGE = 2.5 * 1024 * 1024 * 1024; // 2.5GB in bytes
+
+  const fetchStorage = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('used_storage')
+      .single();
+    if (!error && data?.used_storage != null) {
+      setUsedStorage(data.used_storage);
+    }
+  };
+
+  // Fetch storage on mount
+  useEffect(() => {
+    fetchStorage();
+  }, []);
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
@@ -136,14 +154,18 @@ export function NotesSidebar({
                   >
                     <Folder className="h-4 w-4" />
                     <span>{folder.name}</span>
-                    <Button
-                      className="ml-auto h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteFolder(folder.id);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
+                    <Button asChild className="ml-auto h-6 w-6 p-0 opacity-0 group-hover:opacity-100">
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteFolder(folder.id);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="flex items-center justify-center h-6 w-6"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </div>
                     </Button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -169,6 +191,21 @@ export function NotesSidebar({
         </SidebarGroup>
       </SidebarContent>
       <div className="border-t border-sidebar-border p-4">
+        {/* Storage Usage Bar */}
+        <div className="mb-3">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-xs text-muted-foreground">Storage Used</span>
+            <span className="text-xs font-medium">
+              {((usedStorage / (1024 * 1024 * 1024)).toFixed(2))}GB / 2.50GB
+            </span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-primary"
+              style={{ width: `${Math.min(100, (usedStorage / MAX_STORAGE) * 100)}%` }}
+            />
+          </div>
+        </div>
         <Button onClick={handleLogout} className="w-full justify-start">
           <LogOut className="h-4 w-4 mr-2" />
           {t("sidebar.sign_out")}

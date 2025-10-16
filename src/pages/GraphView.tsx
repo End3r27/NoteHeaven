@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import * as d3 from "d3";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/components/language/LanguageProvider";
 
@@ -29,6 +29,7 @@ interface GraphData {
 export default function GraphView() {
   const svgRef = useRef<SVGSVGElement>(null);
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -38,6 +39,7 @@ export default function GraphView() {
   }, []);
 
   const fetchGraphData = async () => {
+    setIsLoading(true);
     try {
       // Fetch notes with tags and folders
       const { data: notes, error: notesError } = await supabase
@@ -149,6 +151,8 @@ export default function GraphView() {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -308,7 +312,11 @@ export default function GraphView() {
         </div>
       </header>
       <div className="flex-1 relative">
-        {graphData.nodes.length === 0 ? (
+        {isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : graphData.nodes.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             {t("graph.empty")}
           </div>

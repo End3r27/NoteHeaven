@@ -40,6 +40,9 @@ const translations = {
     
     // Editor
     "editor.start_writing": "Start writing...",
+  "editor.attachments": "Attachments",
+  "editor.upload_file": "Upload File",
+  "editor.uploading": "Uploading...",
     "editor.save": "Save",
     "editor.saved": "Saved",
     "editor.recap": "Recap",
@@ -62,6 +65,7 @@ const translations = {
     "sidebar.all_notes": "All Notes",
     "sidebar.tags": "Tags",
     "sidebar.sign_out": "Sign out",
+
 
     // Graph page
     "graph.back_to_notes": "Back to Notes",
@@ -150,6 +154,9 @@ const translations = {
     
     // Editor
     "editor.start_writing": "Inizia a scrivere...",
+  "editor.attachments": "Allegati",
+  "editor.upload_file": "Carica file",
+  "editor.uploading": "Caricamento...",
     "editor.save": "Salva",
     "editor.saved": "Salvato",
     "editor.recap": "Riepilogo",
