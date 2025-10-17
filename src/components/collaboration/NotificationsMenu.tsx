@@ -70,20 +70,9 @@ export const NotificationsMenu = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        async (payload) => {
-          // Fetch the complete notification with sender info
-          const { data } = await supabase
-            .from('notifications')
-            .select(`
-              *,
-              sender:profiles!notifications_sender_id_fkey(nickname)
-            `)
-            .eq('id', payload.new.id)
-            .single();
-          
-          if (data) {
-            setNotifications((prev) => [data, ...prev]);
-          }
+        (payload) => {
+          console.log("--- REALTIME NOTIFICATION RECEIVED ---", payload.new);
+          setNotifications((prev) => [payload.new as Notification, ...prev]);
         }
       )
       .subscribe();
