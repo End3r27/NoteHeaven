@@ -29,15 +29,42 @@ interface Notification {
   };
 }
 
-const getNotificationBody = (n: Notification) => {
-  if (n.content) return n.content;
-  if (n.type === 'share_invite') {
-    const who = n.sender?.nickname || 'Someone';
-    const where =
-      n.resource_type === 'folder' ? 'folder' :
-      n.resource_type === 'note' ? 'note' : 'resource';
+const getSenderName = (n: any) =>
+  n?.sender?.nickname || n?.data?.senderName || n?.payload?.senderName || 'Someone';
+
+const getResource = (n: any) => {
+  const id =
+    n?.resource_id ||
+    n?.data?.noteId ||
+    n?.data?.folderId ||
+    n?.payload?.resource_id ||
+    n?.payload?.note_id ||
+    n?.payload?.folder_id || null;
+
+  let type =
+    n?.resource_type ||
+    (n?.data?.folderId ? 'folder' : n?.data?.noteId ? 'note' : null) ||
+    n?.payload?.resource_type || null;
+  return { id, type } as { id: string | null; type: 'note' | 'folder' | null };
+};
+
+const isInvite = (n: any) => String(n?.type || '').includes('invite');
+
+const getNotificationBody = (n: any) => {
+  if (n?.content) return n.content as string;
+  if (n?.message) return String(n.message);
+  if (isInvite(n)) {
+    const who = getSenderName(n);
+    const { type } = getResource(n);
+    const where = type === 'folder' ? 'folder' : type === 'note' ? 'note' : 'resource';
     return `${who} invited you to collaborate on the ${where}.`;
   }
+  const t = String(n?.type || '');
+  if (t === 'new_comment') return 'You have a new comment.';
+  if (t === 'comment_reply') return 'Someone replied to your comment.';
+  if (t === 'edit') return 'Your shared content was edited.';
+  if (t === 'share_accept') return 'Your invitation was accepted.';
+  if (t === 'note_fork') return 'Your note has been forked.';
   return null;
 };
 
@@ -129,13 +156,14 @@ export const NotificationsMenu = () => {
   };
 
   const handleAcceptInvite = async (notification: any) => {
-    if (!notification.resource_id || !notification.resource_type) return;
+    const { id, type } = getResource(notification);
+    if (!id || !type) return;
 
-    if (notification.resource_type === 'note') {
+    if (type === 'note') {
       const { error } = await supabase
         .from('shared_notes')
         .update({ accepted: true })
-        .eq('note_id', notification.resource_id)
+        .eq('note_id', id)
         .eq('user_id', user?.id);
 
       if (error) {
@@ -151,11 +179,11 @@ export const NotificationsMenu = () => {
         });
         handleMarkAsRead(notification.id);
       }
-    } else if (notification.resource_type === 'folder') {
+    } else if (type === 'folder') {
       const { error } = await supabase
         .from('shared_folders')
         .update({ accepted: true })
-        .eq('folder_id', notification.resource_id)
+        .eq('folder_id', id)
         .eq('user_id', user?.id);
 
       if (error) {
@@ -175,13 +203,14 @@ export const NotificationsMenu = () => {
   };
 
   const handleDeclineInvite = async (notification: any) => {
-    if (!notification.resource_id || !notification.resource_type) return;
+    const { id, type } = getResource(notification);
+    if (!id || !type) return;
 
-    if (notification.resource_type === 'note') {
+    if (type === 'note') {
       const { error } = await supabase
         .from('shared_notes')
         .delete()
-        .eq('note_id', notification.resource_id)
+        .eq('note_id', id)
         .eq('user_id', user?.id);
 
       if (!error) {
@@ -191,11 +220,11 @@ export const NotificationsMenu = () => {
         });
         handleMarkAsRead(notification.id);
       }
-    } else if (notification.resource_type === 'folder') {
+    } else if (type === 'folder') {
       const { error } = await supabase
         .from('shared_folders')
         .delete()
-        .eq('folder_id', notification.resource_id)
+        .eq('folder_id', id)
         .eq('user_id', user?.id);
 
       if (!error) {
@@ -249,7 +278,13 @@ export const NotificationsMenu = () => {
               <div className="flex flex-col gap-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{notification.title}</p>
+                    <p className="text-sm font-medium">
+                      {notification.title ||
+                        (isInvite(notification)
+                          ? 'Invitation to collaborate'
+                          : String(notification.type || '').replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()) ||
+                            'Notification')}
+                    </p>
                     {(() => {
                       const body = getNotificationBody(notification as Notification);
                       return body ? (
@@ -278,7 +313,7 @@ export const NotificationsMenu = () => {
                     </Button>
                   )}
                 </div>
-                {notification.type === 'share_invite' && notification.resource_id && (
+                {isInvite(notification) && getResource(notification).id && (
                   <div className="flex gap-2">
                     <Button
                       size="sm"
