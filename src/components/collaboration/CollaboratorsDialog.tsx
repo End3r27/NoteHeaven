@@ -102,6 +102,14 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
  const handleInvite = async (userId: string) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
+  if (userId === user.id) {
+    toast({
+      title: 'Invalid invite',
+      description: 'You cannot invite yourself.',
+      variant: 'destructive',
+    });
+    return;
+  }
 
   const { error } = await supabase.from('shared_notes').insert({
     note_id: noteId,

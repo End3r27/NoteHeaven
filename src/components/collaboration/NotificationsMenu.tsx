@@ -159,82 +159,63 @@ export const NotificationsMenu = () => {
     const { id, type } = getResource(notification);
     if (!id || !type) return;
 
+    let error = null as any;
     if (type === 'note') {
-      const { error } = await supabase
+      ({ error } = await supabase
         .from('shared_notes')
         .update({ accepted: true })
         .eq('note_id', id)
-        .eq('user_id', user?.id);
-
-      if (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to accept invitation',
-          variant: 'destructive'
-        });
-      } else {
-        toast({
-          title: 'Invitation accepted',
-          description: 'You can now access this note'
-        });
-        handleMarkAsRead(notification.id);
-      }
+        .eq('user_id', user?.id));
     } else if (type === 'folder') {
-      const { error } = await supabase
+      ({ error } = await supabase
         .from('shared_folders')
         .update({ accepted: true })
         .eq('folder_id', id)
-        .eq('user_id', user?.id);
-
-      if (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to accept invitation',
-          variant: 'destructive'
-        });
-      } else {
-        toast({
-          title: 'Invitation accepted',
-          description: 'You can now access this folder'
-        });
-        handleMarkAsRead(notification.id);
-      }
+        .eq('user_id', user?.id));
     }
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to accept invitation', variant: 'destructive' });
+      return;
+    }
+
+    // Delete the notification after successful action
+    await supabase.from('notifications').delete().eq('id', notification.id);
+    // Optimistically remove it from UI
+    setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+
+    toast({ title: 'Invitation accepted', description: `Access granted to the ${type}.` });
   };
 
   const handleDeclineInvite = async (notification: any) => {
     const { id, type } = getResource(notification);
     if (!id || !type) return;
 
+    let error = null as any;
     if (type === 'note') {
-      const { error } = await supabase
+      ({ error } = await supabase
         .from('shared_notes')
         .delete()
         .eq('note_id', id)
-        .eq('user_id', user?.id);
-
-      if (!error) {
-        toast({
-          title: 'Invitation declined',
-          description: 'The invitation has been removed'
-        });
-        handleMarkAsRead(notification.id);
-      }
+        .eq('user_id', user?.id));
     } else if (type === 'folder') {
-      const { error } = await supabase
+      ({ error } = await supabase
         .from('shared_folders')
         .delete()
         .eq('folder_id', id)
-        .eq('user_id', user?.id);
-
-      if (!error) {
-        toast({
-          title: 'Invitation declined',
-          description: 'The invitation has been removed'
-        });
-        handleMarkAsRead(notification.id);
-      }
+        .eq('user_id', user?.id));
     }
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to decline invitation', variant: 'destructive' });
+      return;
+    }
+
+    // Delete the notification after successful decline
+    await supabase.from('notifications').delete().eq('id', notification.id);
+    setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+
+    toast({ title: 'Invitation declined', description: 'The invitation has been removed' });
   };
 
   return (

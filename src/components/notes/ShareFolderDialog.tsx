@@ -74,6 +74,14 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
   const handleShareWithUser = async (userId: string) => {
   const { data: currentUser } = await supabase.auth.getUser();
   if (!currentUser.user) return;
+  if (userId === currentUser.user.id) {
+    toast({
+      title: "Invalid invite",
+      description: "You cannot invite yourself.",
+      variant: "destructive"
+    });
+    return;
+  }
 
   const { error } = await supabase
     .from('shared_folders')
