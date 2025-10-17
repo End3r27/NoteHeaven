@@ -7,6 +7,8 @@ import { NoteEditor } from "./NoteEditor";
 import { AIInsights } from "./AIInsights";
 import { RelatedNotes } from "./RelatedNotes";
 import { useToast } from "@/hooks/use-toast";
+import type { Profile } from "@/types/profile";
+import type { Attachment } from "@/types/attachment";
 import { useLanguage } from "@/components/language/LanguageProvider";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase as supabaseClient } from "@/integrations/supabase/client";
@@ -30,12 +32,6 @@ interface Folder {
 interface Tag {
   id: string;
   name: string;
-}
-
-interface Profile {
-  id: string;
-  email: string;
-  used_storage: number;
 }
 
 export function NotesLayout({ user }: { user: { id: string } }) {

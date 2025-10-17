@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Notes from "./pages/Notes";
 import DailyRecap from "./pages/DailyRecap";
 import GraphView from "./pages/GraphView";
+import ProfileSetup from "./pages/ProfileSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/notes" element={<Notes />} />
               <Route path="/daily" element={<DailyRecap />} />
               <Route path="/graph" element={<GraphView />} />
+              <Route path="/profile-setup" element={<ProfileSetup />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

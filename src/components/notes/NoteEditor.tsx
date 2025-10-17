@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Attachment } from "@/types/attachment";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language/LanguageProvider";
 
@@ -17,15 +18,6 @@ interface Note {
   created_at: string;
   updated_at: string;
   user_id: string;
-}
-
-interface Attachment {
-  id: string;
-  filename: string;
-  file_url: string;
-  filesize: number;
-  uploaded_at: string;
-  note_id: string | null;
 }
 
 interface Tag {

@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      attachments: {
+        Row: {
+          created_at: string | null
+          file_url: string
+          filename: string
+          filesize: number
+          id: string
+          mime_type: string | null
+          note_id: string
+          uploaded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_url: string
+          filename: string
+          filesize: number
+          id?: string
+          mime_type?: string | null
+          note_id: string
+          uploaded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_url?: string
+          filename?: string
+          filesize?: number
+          id?: string
+          mime_type?: string | null
+          note_id?: string
+          uploaded_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folders: {
         Row: {
           created_at: string | null
@@ -88,6 +132,8 @@ export type Database = {
           created_at: string | null
           folder_id: string | null
           id: string
+          is_public: boolean | null
+          public_uuid: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -97,6 +143,8 @@ export type Database = {
           created_at?: string | null
           folder_id?: string | null
           id?: string
+          is_public?: boolean | null
+          public_uuid?: string | null
           title?: string
           updated_at?: string | null
           user_id: string
@@ -106,6 +154,8 @@ export type Database = {
           created_at?: string | null
           folder_id?: string | null
           id?: string
+          is_public?: boolean | null
+          public_uuid?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -133,20 +183,99 @@ export type Database = {
           email: string
           id: string
           updated_at: string | null
+          used_storage: number | null
         }
         Insert: {
           created_at?: string | null
           email: string
           id: string
           updated_at?: string | null
+          used_storage?: number | null
         }
         Update: {
           created_at?: string | null
           email?: string
           id?: string
           updated_at?: string | null
+          used_storage?: number | null
         }
         Relationships: []
+      }
+      shared_folders: {
+        Row: {
+          accepted: boolean | null
+          created_at: string | null
+          folder_id: string
+          id: string
+          invited_by: string
+          permission: string
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          created_at?: string | null
+          folder_id: string
+          id?: string
+          invited_by: string
+          permission: string
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          created_at?: string | null
+          folder_id?: string
+          id?: string
+          invited_by?: string
+          permission?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_folders_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_notes: {
+        Row: {
+          accepted: boolean | null
+          created_at: string | null
+          id: string
+          invited_by: string
+          note_id: string
+          permission: string
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          created_at?: string | null
+          id?: string
+          invited_by: string
+          note_id: string
+          permission: string
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          created_at?: string | null
+          id?: string
+          invited_by?: string
+          note_id?: string
+          permission?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_notes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {
@@ -176,6 +305,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          favorite_color: string | null
+          id: string
+          is_profile_complete: boolean | null
+          nickname: string
+          profile_pic_url: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          favorite_color?: string | null
+          id?: string
+          is_profile_complete?: boolean | null
+          nickname: string
+          profile_pic_url?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          favorite_color?: string | null
+          id?: string
+          is_profile_complete?: boolean | null
+          nickname?: string
+          profile_pic_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

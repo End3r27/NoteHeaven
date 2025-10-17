@@ -34,6 +34,12 @@ interface Tag {
   name: string;
 }
 
+interface Profile {
+  id: string;
+  email: string;
+  used_storage?: number;
+}
+
 interface NotesSidebarProps {
   folders: Folder[];
   tags: Tag[];
@@ -42,12 +48,16 @@ interface NotesSidebarProps {
   onCreateFolder: (name: string) => void;
   onDeleteFolder: (id: string) => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string | null) => void;
+  profile: Profile;
+  totalStorage: number;
 }
 
 export function NotesSidebar({
   folders,
   tags,
   selectedFolder,
+  profile,
+  totalStorage,
   onSelectFolder,
   onCreateFolder,
   onDeleteFolder,

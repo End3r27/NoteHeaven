@@ -12,14 +12,34 @@ const Notes = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    const checkProfileAndAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session?.user) {
         navigate("/auth");
+        setLoading(false);
+        return;
       }
+
+      setUser(session.user);
+
+      // Check if user has completed profile setup
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('is_profile_complete')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (!profile?.is_profile_complete) {
+        navigate("/profile-setup");
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
-    });
+    };
+
+    checkProfileAndAuth();
 
     // Listen for auth changes
     const {
