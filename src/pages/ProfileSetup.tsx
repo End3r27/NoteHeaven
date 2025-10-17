@@ -53,14 +53,14 @@ const ProfileSetup = () => {
 
     try {
       const { error } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: user.id,
+        .from('profiles')
+        .update({
           nickname,
           bio: bio || null,
           favorite_color: favoriteColor,
           is_profile_complete: true
-        });
+        })
+        .eq('id', user.id);
 
       if (error) throw error;
 

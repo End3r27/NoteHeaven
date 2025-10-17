@@ -36,41 +36,42 @@ USING (auth.uid() = user_id);
 ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS used_storage BIGINT DEFAULT 0;
 
--- Create user profiles extension table for NoteHaven Campus
-CREATE TABLE IF NOT EXISTS public.user_profiles (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  nickname TEXT NOT NULL,
-  profile_pic_url TEXT,
-  favorite_color TEXT DEFAULT '#3b82f6',
-  bio TEXT,
-  is_profile_complete BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  CONSTRAINT nickname_length CHECK (char_length(nickname) >= 2 AND char_length(nickname) <= 50),
-  CONSTRAINT bio_length CHECK (char_length(bio) <= 200)
-);
+-- Alter profiles table for NoteHaven Campus
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS nickname TEXT,
+ADD COLUMN IF NOT EXISTS profile_pic_url TEXT,
+ADD COLUMN IF NOT EXISTS favorite_color TEXT DEFAULT '#3b82f6',
+ADD COLUMN IF NOT EXISTS bio TEXT,
+ADD COLUMN IF NOT EXISTS is_profile_complete BOOLEAN DEFAULT false;
 
--- Enable RLS
-ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+-- Add constraints to profiles table if they don't exist
+DO $
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nickname_length' and conrelid = 'public.profiles'::regclass) THEN
+    ALTER TABLE public.profiles ADD CONSTRAINT nickname_length CHECK (char_length(nickname) >= 2 AND char_length(nickname) <= 50);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'bio_length' and conrelid = 'public.profiles'::regclass) THEN
+    ALTER TABLE public.profiles ADD CONSTRAINT bio_length CHECK (char_length(bio) <= 200);
+  END IF;
+END;
+$;
+
+
+-- Drop existing policies on profiles
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 
 -- Everyone can view user profiles (for collaboration)
 CREATE POLICY "User profiles are viewable by everyone"
-ON public.user_profiles
+ON public.profiles
 FOR SELECT
 USING (true);
 
 -- Users can update their own profile
 CREATE POLICY "Users can update own profile"
-ON public.user_profiles
+ON public.profiles
 FOR UPDATE
-USING (auth.uid() = user_id);
-
--- Users can insert their own profile
-CREATE POLICY "Users can insert own profile"
-ON public.user_profiles
-FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+USING (auth.uid() = id);
 
 -- Create shared folders table
 CREATE TABLE IF NOT EXISTS public.shared_folders (
@@ -164,8 +165,4 @@ ON public.notes
 FOR SELECT
 USING (is_public = true);
 
--- Update trigger for user_profiles
-CREATE TRIGGER update_user_profiles_updated_at
-BEFORE UPDATE ON public.user_profiles
-FOR EACH ROW
-EXECUTE FUNCTION public.handle_updated_at();
+-- The trigger set_updated_at_profiles already exists from the first migration.

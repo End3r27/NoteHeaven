@@ -22,7 +22,7 @@ interface SharedUser {
   user_id: string;
   permission: string;
   accepted: boolean;
-  user_profiles: {
+  profiles: {
     nickname: string;
     favorite_color: string;
   };
@@ -47,15 +47,15 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
       // Fetch user profiles separately
       const userIds = data.map(d => d.user_id);
       const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('user_id, nickname, favorite_color')
-        .in('user_id', userIds);
+        .from('profiles')
+        .select('id, nickname, favorite_color')
+        .in('id', userIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
       
       const enrichedData = data.map(share => ({
         ...share,
-        user_profiles: profileMap.get(share.user_id) || { nickname: 'Unknown', favorite_color: '#gray' }
+        profiles: profileMap.get(share.user_id) || { nickname: 'Unknown', favorite_color: '#gray' }
       }));
 
       setSharedUsers(enrichedData as SharedUser[]);
@@ -66,8 +66,8 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
     if (searchQuery.trim().length < 2) return;
 
     const { data, error } = await supabase
-      .from('user_profiles')
-      .select('user_id, nickname, favorite_color')
+      .from('profiles')
+      .select('id, nickname, favorite_color')
       .ilike('nickname', `%${searchQuery}%`)
       .limit(5);
 
@@ -223,7 +223,7 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
             {searchResults.length > 0 && (
               <div className="border rounded-lg divide-y max-h-40 overflow-y-auto">
                 {searchResults.map((user) => (
-                  <div key={user.user_id} className="p-2 flex items-center justify-between hover:bg-muted/50">
+                  <div key={user.id} className="p-2 flex items-center justify-between hover:bg-muted/50">
                     <div className="flex items-center gap-2">
                       <div
                         className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
@@ -236,7 +236,7 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleShareWithUser(user.user_id)}
+                      onClick={() => handleShareWithUser(user.id)}
                     >
                       <User className="h-4 w-4" />
                     </Button>
@@ -256,11 +256,11 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
                     <div className="flex items-center gap-2">
                       <div
                         className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                        style={{ backgroundColor: share.user_profiles.favorite_color }}
+                        style={{ backgroundColor: share.profiles.favorite_color }}
                       >
-                        {share.user_profiles.nickname[0].toUpperCase()}
+                        {share.profiles.nickname[0].toUpperCase()}
                       </div>
-                      <span className="text-sm">{share.user_profiles.nickname}</span>
+                      <span className="text-sm">{share.profiles.nickname}</span>
                       <Badge variant={share.accepted ? "default" : "secondary"} className="text-xs">
                         {share.permission}
                       </Badge>

@@ -48,9 +48,9 @@ const SharedNote = () => {
 
       // Fetch author profile
       const { data: profile } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .select('nickname')
-        .eq('user_id', data.user_id)
+        .eq('id', data.user_id)
         .single();
 
       if (profile) {

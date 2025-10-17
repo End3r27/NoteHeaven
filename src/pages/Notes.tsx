@@ -25,9 +25,9 @@ const Notes = () => {
 
       // Check if user has completed profile setup
       const { data: profile } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .select('is_profile_complete')
-        .eq('user_id', session.user.id)
+        .eq('id', session.user.id)
         .maybeSingle();
 
       if (!profile?.is_profile_complete) {

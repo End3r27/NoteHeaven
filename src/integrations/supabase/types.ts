@@ -184,6 +184,11 @@ export type Database = {
           id: string
           updated_at: string | null
           used_storage: number | null
+          bio: string | null
+          favorite_color: string | null
+          is_profile_complete: boolean | null
+          nickname: string | null
+          profile_pic_url: string | null
         }
         Insert: {
           created_at?: string | null
@@ -191,6 +196,11 @@ export type Database = {
           id: string
           updated_at?: string | null
           used_storage?: number | null
+          bio?: string | null
+          favorite_color?: string | null
+          is_profile_complete?: boolean | null
+          nickname?: string | null
+          profile_pic_url?: string | null
         }
         Update: {
           created_at?: string | null
@@ -198,6 +208,11 @@ export type Database = {
           id?: string
           updated_at?: string | null
           used_storage?: number | null
+          bio?: string | null
+          favorite_color?: string | null
+          is_profile_complete?: boolean | null
+          nickname?: string | null
+          profile_pic_url?: string | null
         }
         Relationships: []
       }
@@ -306,42 +321,7 @@ export type Database = {
           },
         ]
       }
-      user_profiles: {
-        Row: {
-          bio: string | null
-          created_at: string | null
-          favorite_color: string | null
-          id: string
-          is_profile_complete: boolean | null
-          nickname: string
-          profile_pic_url: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          bio?: string | null
-          created_at?: string | null
-          favorite_color?: string | null
-          id?: string
-          is_profile_complete?: boolean | null
-          nickname: string
-          profile_pic_url?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          bio?: string | null
-          created_at?: string | null
-          favorite_color?: string | null
-          id?: string
-          is_profile_complete?: boolean | null
-          nickname?: string
-          profile_pic_url?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
+
     }
     Views: {
       [_ in never]: never
