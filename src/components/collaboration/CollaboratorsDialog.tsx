@@ -111,28 +111,25 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     return;
   }
 
-  const { error } = await supabase.from('shared_notes').insert({
-    note_id: noteId,
-    invited_by: user.id,
-    user_id: userId,
-    permission: selectedPermission,
-    accepted: false,
-  });
+  const { error } = await supabase
+    .from('shared_notes')
+    .upsert(
+      {
+        note_id: noteId,
+        invited_by: user.id,
+        user_id: userId,
+        permission: selectedPermission,
+        accepted: false,
+      },
+      { onConflict: 'note_id,user_id' }
+    );
 
   if (error) {
-    if (error.code === '23505') {
-      toast({
-        title: 'Already invited',
-        description: 'This user is already a collaborator',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Error',
-        description: 'Failed to invite user',
-        variant: 'destructive',
-      });
-    }
+    toast({
+      title: 'Error',
+      description: 'Failed to invite user',
+      variant: 'destructive',
+    });
     return;
   }
 

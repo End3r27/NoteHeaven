@@ -80,7 +80,7 @@ export const NotificationsMenu = () => {
       const { data, error } = await supabase
         .from('notifications')
         .select(`
-          *,
+          id, user_id, sender_id, type, title, content, resource_id, resource_type, is_read, created_at,
           sender:profiles!notifications_sender_id_fkey(nickname)
         `)
         .eq('user_id', user.id)

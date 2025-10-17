@@ -85,28 +85,23 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
 
   const { error } = await supabase
     .from('shared_folders')
-    .insert({
-      folder_id: folderId,
-      user_id: userId,
-      permission: selectedPermission,
-      invited_by: currentUser.user.id,
-      accepted: false
-    });
+    .upsert(
+      {
+        folder_id: folderId,
+        user_id: userId,
+        permission: selectedPermission,
+        invited_by: currentUser.user.id,
+        accepted: false
+      },
+      { onConflict: 'folder_id,user_id' }
+    );
 
   if (error) {
-    if (error.code === '23505') {
-      toast({
-        title: "Already shared",
-        description: "This folder is already shared with this user",
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to share folder",
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: "Error",
+      description: "Failed to share folder",
+      variant: "destructive"
+    });
   } else {
     // Create notification directly using Supabase
     const { data: profile } = await supabase
