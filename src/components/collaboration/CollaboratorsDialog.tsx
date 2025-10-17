@@ -21,6 +21,7 @@ import {
 import { Users, Search, Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { sendNotification } from '@/lib/notifications';
 
 interface Collaborator {
   id: string;
@@ -58,10 +59,10 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
       .from('shared_notes')
       .select(`
         id,
-        shared_with,
+        user_id,
         permission,
         accepted,
-        user:profiles!shared_notes_shared_with_fkey(nickname, avatar_url, favorite_color)
+        user:profiles!shared_notes_user_id_fkey(nickname, profile_pic_url, favorite_color)
       `)
       .eq('note_id', noteId);
 
@@ -69,12 +70,12 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
       setCollaborators(
         data.map((c: any) => ({
           id: c.id,
-          userId: c.shared_with,
+          userId: c.user_id,
           permission: c.permission,
           accepted: c.accepted,
           user: {
             nickname: c.user?.nickname || 'Unknown',
-            avatarUrl: c.user?.avatar_url,
+            avatarUrl: c.user?.profile_pic_url,
             favoriteColor: c.user?.favorite_color || '#3b82f6',
           },
         }))
@@ -87,7 +88,7 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, nickname, avatar_url, favorite_color')
+      .select('id, nickname, profile_pic_url, favorite_color')
       .ilike('nickname', `%${searchQuery}%`)
       .limit(5);
 
@@ -104,8 +105,8 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
 
     const { error } = await supabase.from('shared_notes').insert({
       note_id: noteId,
-      shared_by: user.id,
-      shared_with: userId,
+      invited_by: user.id,
+      user_id: userId,
       permission: selectedPermission,
       accepted: false,
     });
@@ -128,15 +129,21 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     }
 
     // Create notification
-    await supabase.from('notifications').insert({
-      recipient_id: userId,
-      sender_id: user.id,
-      type: 'invite',
-      payload: {
-        noteId,
-        noteTitle,
-      },
-    });
+    try {
+      const senderName = user.user_metadata?.full_name || 'A user';
+      await sendNotification(supabase, {
+        userId: userId,
+        senderId: user.id,
+        type: 'invite',
+        message: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
+        data: {
+          noteId: noteId,
+          senderName: senderName,
+        },
+      });
+    } catch (notificationError) {
+        console.error('Failed to send notification', notificationError);
+    }
 
     toast({
       title: 'Invitation sent!',

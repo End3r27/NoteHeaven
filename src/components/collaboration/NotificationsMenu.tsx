@@ -1,135 +1,148 @@
-import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client'; 
+import { useAuth } from '@/hooks/use-auth';
+import { Notification } from '@/types/notifications';
+import { Bell, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDistanceToNow } from "date-fns";
-import type { Notification } from "@/types/shared";
-import { getNotifications, markAsRead, subscribeToNotifications } from "@/lib/notifications";
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
-export function NotificationsMenu() {
+export const NotificationsMenu = () => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [open, setOpen] = useState(false);
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
-    const fetchNotificationsData = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+    if (!user) return;
 
-        if (!user) return;
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-        const notificationsData = await getNotifications(user.id);
-        setNotifications(notificationsData);
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
+      if (error) {
+        console.error('Error fetching notifications:', error);
+      } else {
+        setNotifications(data as Notification[]);
       }
     };
 
-    fetchNotificationsData();
+    fetchNotifications();
+  }, [user]);
 
-    // Subscribe to new notifications
-    let subscription: ReturnType<typeof subscribeToNotifications>;
-    const setupSubscription = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  useEffect(() => {
+    if (!user) return;
 
-      if (!user) return;
-
-      subscription = subscribeToNotifications(user.id, fetchNotificationsData);
-    };
-
-    setupSubscription();
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setNotifications((prev) => [payload.new as Notification, ...prev]);
+        }
+      )
+      .subscribe();
 
     return () => {
-      subscription?.unsubscribe();
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
-  const handleMarkAsRead = async (id: string) => {
-    const success = await markAsRead(id);
+  const unreadCount = useMemo(() => {
+    return notifications.filter((n) => !n.is_read).length;
+  }, [notifications]);
 
-    if (success) {
+  const handleMarkAsRead = async (notificationId: string) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+
+    if (error) {
+      console.error('Error marking notification as read:', error);
+    } else {
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+        prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
       );
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false);
+
+    if (error) {
+        console.error('Error marking all notifications as read:', error);
+    } else {
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    }
+  };
+
+
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-9 w-9"
-          onClick={() => setOpen(true)}
-        >
+        <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+            <Badge
+              variant="destructive"
+              className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs"
+            >
               {unreadCount}
-            </span>
+            </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
+        <div className="flex items-center justify-between p-2">
+            <h3 className="font-semibold">Notifications</h3>
+            {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
+                    <Check className="mr-2 h-4 w-4" />
+                    Mark all as read
+                </Button>
+            )}
+        </div>
+        <DropdownMenuSeparator />
         {notifications.length === 0 ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            No notifications
-          </div>
+          <p className="p-4 text-center text-sm text-muted-foreground">
+            No new notifications.
+          </p>
         ) : (
           notifications.map((notification) => (
             <DropdownMenuItem
               key={notification.id}
-              className={cn(
-                "flex items-start gap-3 p-4",
-                !notification.is_read && "bg-muted/50"
-              )}
-              onClick={() => handleMarkAsRead(notification.id)}
+              className={`flex flex-col items-start gap-1 p-2 ${
+                !notification.is_read ? 'bg-secondary' : ''
+              }`}
+              onClick={() => !notification.is_read && handleMarkAsRead(notification.id)}
             >
-              {notification.actor && (
-                <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarImage
-                    src={notification.actor.profile_pic_url || undefined}
-                    alt={notification.actor.nickname || ""}
-                  />
-                  <AvatarFallback
-                    style={{
-                      backgroundColor: notification.actor.favorite_color || undefined,
-                    }}
-                  >
-                    {notification.actor.nickname?.[0]?.toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <div className="flex-1 space-y-1">
-                <p className="text-sm">{notification.title}</p>
-                {notification.content && (
-                  <p className="text-xs text-muted-foreground">
-                    {notification.content}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(notification.created_at), {
-                    addSuffix: true,
-                  })}
-                </p>
-              </div>
+              <p className="text-sm font-medium">{notification.message}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(notification.created_at).toLocaleString()}
+              </p>
             </DropdownMenuItem>
           ))
         )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};

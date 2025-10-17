@@ -1,3 +1,4 @@
+import React from 'react';
 import { useCollaboration } from './CollaborationProvider';
 import { Avatar } from '@/components/ui/avatar';
 import {
@@ -8,34 +9,38 @@ import {
 } from '@/components/ui/tooltip';
 
 export const PresenceAvatars = () => {
-  const { users } = useCollaboration();
+  const { activeUsers } = useCollaboration();
 
-  if (users.length === 0) return null;
+  if (!activeUsers || activeUsers.length === 0) return null;
 
   return (
     <TooltipProvider>
       <div className="flex items-center gap-1">
         <span className="text-xs text-muted-foreground mr-2">Active:</span>
         <div className="flex -space-x-2">
-          {users.slice(0, 5).map((user) => (
-            <Tooltip key={user.id}>
-              <TooltipTrigger asChild>
-                <Avatar
-                  className="h-8 w-8 border-2 border-background cursor-pointer hover:scale-110 transition-transform flex items-center justify-center text-white text-xs font-medium"
-                  style={{ backgroundColor: user.favoriteColor }}
-                >
-                  {user.nickname[0].toUpperCase()}
-                </Avatar>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="font-medium">{user.nickname}</p>
-                <p className="text-xs text-muted-foreground">Editing now</p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-          {users.length > 5 && (
+          {activeUsers.slice(0, 5).map((presence) => {
+            const user = presence.user;
+            if (!user) return null;
+            return (
+              <Tooltip key={user.id}>
+                <TooltipTrigger asChild>
+                  <Avatar
+                    className="h-8 w-8 border-2 border-background cursor-pointer hover:scale-110 transition-transform flex items-center justify-center text-white text-xs font-medium"
+                    style={{ backgroundColor: user.favorite_color || '#ccc' }}
+                  >
+                    {user.nickname ? user.nickname[0].toUpperCase() : 'U'}
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-medium">{user.nickname}</p>
+                  <p className="text-xs text-muted-foreground">Editing now</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+          {activeUsers.length > 5 && (
             <div className="h-8 w-8 border-2 border-background rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-              +{users.length - 5}
+              +{activeUsers.length - 5}
             </div>
           )}
         </div>

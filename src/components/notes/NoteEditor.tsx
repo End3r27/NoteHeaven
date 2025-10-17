@@ -12,7 +12,7 @@ import { useLanguage } from "@/components/language/LanguageProvider";
 import { ShareNoteDialog } from "./ShareNoteDialog";
 import { ExportDialog } from "./ExportDialog";
 import { CollaborationProvider } from "@/components/collaboration/CollaborationProvider";
-import { PresenceAvatars, CollaborativeEditor } from "@/components/collaboration/PresenceAvatars";
+import { PresenceAvatars, CollaborativeEditor } from "@/components/collaboration/PresenceCursors";
 import { Comments } from "@/components/collaboration/Comments";
 import { CollaboratorsDialog } from "@/components/collaboration/CollaboratorsDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
