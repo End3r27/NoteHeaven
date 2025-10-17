@@ -57,26 +57,36 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
   const fetchCollaborators = async () => {
     const { data, error } = await supabase
       .from('shared_notes')
-      .select(`
-        id,
-        user_id,
-        permission,
-        accepted,
-        user:profiles!shared_notes_user_id_fkey(nickname, profile_pic_url, favorite_color)
-      `)
+      .select('*')
       .eq('note_id', noteId);
 
     if (!error && data) {
+      const rows = data as any[];
+      const resolved = rows.map((c) => ({
+        id: c.id,
+        userId: c.user_id || c.shared_with,
+        permission: c.permission || c.role || 'viewer',
+        accepted: Boolean(c.accepted),
+      }));
+
+      const userIds = resolved.map((r) => r.userId).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nickname, profile_pic_url, favorite_color')
+        .in('id', userIds);
+
+      const pMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
       setCollaborators(
-        data.map((c: any) => ({
-          id: c.id,
-          userId: c.user_id,
-          permission: c.permission,
-          accepted: c.accepted,
+        resolved.map((r) => ({
+          id: r.id,
+          userId: r.userId,
+          permission: r.permission,
+          accepted: r.accepted,
           user: {
-            nickname: c.user?.nickname || 'Unknown',
-            avatarUrl: c.user?.profile_pic_url,
-            favoriteColor: c.user?.favorite_color || '#3b82f6',
+            nickname: pMap.get(r.userId)?.nickname || 'Unknown',
+            avatarUrl: pMap.get(r.userId)?.profile_pic_url,
+            favoriteColor: pMap.get(r.userId)?.favorite_color || '#3b82f6',
           },
         }))
       );
@@ -111,20 +121,38 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     return;
   }
 
-  const { error } = await supabase
+  // Try shared_with schema first, then fallback to user_id schema
+  let inviteError = null as any;
+  let res = await supabase
     .from('shared_notes')
     .upsert(
       {
         note_id: noteId,
-        invited_by: user.id,
-        user_id: userId,
+        shared_by: user.id,
+        shared_with: userId,
         permission: selectedPermission,
         accepted: false,
-      },
-      { onConflict: 'note_id,user_id' }
+      } as any,
+      { onConflict: 'note_id,shared_with' }
     );
+  inviteError = res.error;
+  if (inviteError) {
+    res = await supabase
+      .from('shared_notes')
+      .upsert(
+        {
+          note_id: noteId,
+          invited_by: user.id,
+          user_id: userId,
+          permission: selectedPermission,
+          accepted: false,
+        } as any,
+        { onConflict: 'note_id,user_id' }
+      );
+    inviteError = res.error;
+  }
 
-  if (error) {
+  if (inviteError) {
     toast({
       title: 'Error',
       description: 'Failed to invite user',

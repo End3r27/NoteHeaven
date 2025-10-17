@@ -40,12 +40,18 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
   const loadSharedUsers = async () => {
     const { data, error } = await supabase
       .from('shared_notes')
-      .select('id, user_id, permission, accepted')
+      .select('*')
       .eq('note_id', noteId);
 
     if (!error && data) {
-      // Fetch user profiles separately
-      const userIds = data.map(d => d.user_id);
+      // Resolve userId across schemas
+      const mapped = (data as any[]).map((d) => ({
+        ...d,
+        user_id: d.user_id || d.shared_with,
+        permission: d.permission || d.role || 'viewer',
+      }));
+
+      const userIds = mapped.map(d => d.user_id);
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, nickname, favorite_color')
@@ -53,7 +59,7 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
 
       const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
       
-      const enrichedData = data.map(share => ({
+      const enrichedData = mapped.map(share => ({
         ...share,
         profiles: profileMap.get(share.user_id) || { nickname: 'Unknown', favorite_color: '#gray' }
       }));

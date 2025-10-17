@@ -39,11 +39,13 @@ const Auth = () => {
         });
         navigate("/notes");
       } else {
+        const baseUrl = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
+        const emailRedirectTo = `${baseUrl}/#/notes`;
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/notes`,
+            emailRedirectTo,
           },
         });
 

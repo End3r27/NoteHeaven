@@ -25,14 +25,38 @@ const ProfileSetup = () => {
   const [favoriteColor, setFavoriteColor] = useState("#3b82f6");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         navigate("/auth");
-      } else {
-        setUser(session.user);
+        setInitialLoading(false);
+        return;
       }
+
+      setUser(session.user);
+
+      // Load profile to prefill fields and redirect if already complete
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nickname, bio, favorite_color, is_profile_complete')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile?.is_profile_complete) {
+        navigate('/notes');
+        return;
+      }
+
+      if (profile) {
+        setNickname(profile.nickname ?? "");
+        setBio(profile.bio ?? "");
+        if (profile.favorite_color) setFavoriteColor(profile.favorite_color);
+      }
+
       setInitialLoading(false);
-    });
+    };
+
+    init();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
