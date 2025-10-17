@@ -1,3 +1,6 @@
+// src/lib/notifications.ts
+// Updated to match the actual database schema
+
 import { SupabaseClient } from "@supabase/supabase-js";
 import { NotificationType } from "@/types/notifications";
 
@@ -5,8 +8,10 @@ export interface SendNotificationPayload {
   userId: string;
   senderId: string;
   type: NotificationType;
-  message: string;
-  data?: Record<string, any>;
+  title: string;
+  content?: string;
+  resourceId?: string;
+  resourceType?: "note" | "folder";
 }
 
 export const sendNotification = async (
@@ -17,8 +22,10 @@ export const sendNotification = async (
     user_id: payload.userId,
     sender_id: payload.senderId,
     type: payload.type,
-    message: payload.message,
-    data: payload.data,
+    title: payload.title,
+    content: payload.content,
+    resource_id: payload.resourceId,
+    resource_type: payload.resourceType,
   });
 
   if (error) {
