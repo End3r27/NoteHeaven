@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Trash2, Save, Sparkles, Tag as TagIcon, Upload, File as FileIcon, Download } from "lucide-react";
+import { Trash2, Save, Sparkles, Tag as TagIcon, Upload, File as FileIcon, Download, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,11 @@ import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language/LanguageProvider";
 import { ShareNoteDialog } from "./ShareNoteDialog";
 import { ExportDialog } from "./ExportDialog";
+import { CollaborationProvider } from "@/components/collaboration/CollaborationProvider";
+import { PresenceAvatars, CollaborativeEditor } from "@/components/collaboration/PresenceAvatars";
+import { Comments } from "@/components/collaboration/Comments";
+import { CollaboratorsDialog } from "@/components/collaboration/CollaboratorsDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Note {
   id: string;
@@ -45,13 +50,13 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   const [loadingTags, setLoadingTags] = useState(false);
   const [savingTags, setSavingTags] = useState(false);
   const [noteTags, setNoteTags] = useState<string[]>([]);
-  const [allTags, setAllTags] = useState<string[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [publicUuid, setPublicUuid] = useState<string | null>(null);
+  const [showComments, setShowComments] = useState(false);
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,21 +83,15 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
       }
     })();
 
-    // Load note tags and all tags
+    // Load note tags
     (async () => {
       const { data: existingLinks } = await supabase
         .from('note_tags')
         .select('tags(name)')
         .eq('note_id', note.id);
       setNoteTags((existingLinks || []).map((r: any) => r.tags?.name).filter(Boolean));
-
-      const { data: existing } = await supabase
-        .from('tags')
-        .select('name')
-        .eq('user_id', note.user_id);
-      setAllTags((existing || []).map((t: any) => t.name));
     })();
-  }, [note]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [note]);
 
   useEffect(() => {
     const changed = title !== note.title || body !== note.body;
@@ -117,12 +116,6 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
       toast({
         title: newPublicState ? "Note is now public" : "Note is now private",
         description: newPublicState ? "Anyone with the link can view" : "Only you and shared users can view"
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to update sharing settings",
-        variant: "destructive"
       });
     }
   };
@@ -189,12 +182,9 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   };
 
   const saveSuggestedTags = async () => {
-    if (suggestedTags.length === 0) {
-      return;
-    }
+    if (suggestedTags.length === 0) return;
     setSavingTags(true);
     try {
-      // Fetch existing tags for user
       const { data: existingTags } = await supabase
         .from('tags')
         .select('id, name')
@@ -219,7 +209,6 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
         existingNameToId.set(key, inserted.id);
       }
 
-      // Link tags to note; avoid duplicates
       const { data: existingLinks } = await supabase
         .from('note_tags')
         .select('tag_id')
@@ -235,15 +224,14 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
         if (linkErr) throw linkErr;
       }
 
-      toast({ title: t('insights.toast.summary_generated.title'), description: t('insights.toast.summary_generated.desc').replace('{count}', String(suggestedTags.length)) });
-      // Refresh local tags
+      toast({ title: 'Tags saved', description: `Added ${suggestedTags.length} tags` });
       const { data: refreshed } = await supabase
         .from('note_tags')
         .select('tags(name)')
         .eq('note_id', note.id);
       setNoteTags((refreshed || []).map((r: any) => r.tags?.name).filter(Boolean));
     } catch (error: any) {
-      toast({ title: t('insights.toast.error.title'), description: error.message || 'Failed to save tags', variant: 'destructive' });
+      toast({ title: 'Error', description: error.message || 'Failed to save tags', variant: 'destructive' });
     } finally {
       setSavingTags(false);
     }
@@ -251,7 +239,6 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
 
   const addTagToNote = async (tagName: string) => {
     try {
-      // ensure tag exists
       const { data: tagRow } = await supabase
         .from('tags')
         .select('id')
@@ -271,9 +258,8 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
       const { error: linkErr } = await supabase.from('note_tags').insert({ note_id: note.id, tag_id: tagId });
       if (linkErr) throw linkErr;
       setNoteTags((prev) => Array.from(new Set([...prev, tagName])));
-      if (!allTags.includes(tagName)) setAllTags((prev) => [...prev, tagName]);
     } catch (e: any) {
-      toast({ title: t('insights.toast.error.title'), description: e.message || 'Failed to add tag', variant: 'destructive' });
+      toast({ title: 'Error', description: e.message || 'Failed to add tag', variant: 'destructive' });
     }
   };
 
@@ -293,10 +279,9 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
         .eq('tag_id', tagRow.id);
       if (error) throw error;
       setNoteTags((prev) => prev.filter((t) => t !== tagName));
-      // Notify parent to refresh tags list
       if (onTagsChange) onTagsChange();
     } catch (e: any) {
-      toast({ title: t('insights.toast.error.title'), description: e.message || 'Failed to remove tag', variant: 'destructive' });
+      toast({ title: 'Error', description: e.message || 'Failed to remove tag', variant: 'destructive' });
     }
   };
 
@@ -315,7 +300,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   };
 
   const handleFileUpload = async (file: File) => {
-    if (file.size > 50 * 1024 * 1024) { // 50MB limit
+    if (file.size > 50 * 1024 * 1024) {
       toast({ title: "Error", description: "File is too large (max 50MB)", variant: "destructive" });
       return;
     }
@@ -334,7 +319,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
 
       setAttachments([...attachments, data]);
       toast({ title: "Success", description: "File uploaded successfully" });
-      if (onTagsChange) onTagsChange(); // This will trigger a profile update in NotesLayout
+      if (onTagsChange) onTagsChange();
     } catch (error: any) {
       toast({ title: "Upload Error", description: error.message || "Failed to upload file", variant: "destructive" });
     } finally {
@@ -347,18 +332,16 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
     if (!attachment) return;
 
     try {
-      // Delete from storage
       const filePath = attachment.file_url.split('/attachments/')[1];
       const { error: storageError } = await supabase.storage.from('attachments').remove([filePath]);
       if (storageError) throw storageError;
 
-      // Delete from database (trigger will update used_storage)
       const { error: dbError } = await supabase.from('attachments').delete().eq('id', attachmentId);
       if (dbError) throw dbError;
 
       setAttachments(attachments.filter(a => a.id !== attachmentId));
       toast({ title: "Success", description: "Attachment deleted" });
-      if (onTagsChange) onTagsChange(); // Trigger profile update
+      if (onTagsChange) onTagsChange();
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to delete attachment", variant: "destructive" });
     }
@@ -373,7 +356,6 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
       const { data, error } = await supabase.storage.from('attachments').download(filePath);
       if (error || !data) throw error || new Error('Failed to download file');
 
-      // data is a Blob
       const blob = data as Blob;
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -420,215 +402,242 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="border-b border-border p-4 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSave}
-          disabled={!hasChanges}
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {hasChanges ? t("editor.save") : t("editor.saved")}
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={generateRecap}
-          disabled={loadingRecap}
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          {loadingRecap ? t("editor.generating") : t("editor.recap")}
-        </Button>
-        <Button 
-          variant="ghost" size="sm" onClick={handleDelete}>
-          <Trash2 className="h-4 w-4 mr-2" />
-          {t("editor.delete")}
-        </Button>
-        <ShareNoteDialog 
-          noteId={note.id}
-          isPublic={isPublic}
-          publicUuid={publicUuid}
-          onTogglePublic={handleTogglePublic}
-        />
-        <ExportDialog 
-          noteTitle={title}
-          noteBody={body}
-        />
-        <div className="text-xs text-muted-foreground ml-auto">
-          {t("editor.last_edited")} {new Date(note.updated_at).toLocaleDateString()}
+    <CollaborationProvider noteId={note.id}>
+      <div className="h-full flex flex-col">
+        <div className="border-b border-border p-4 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSave}
+            disabled={!hasChanges}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {hasChanges ? t("editor.save") : t("editor.saved")}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={generateRecap}
+            disabled={loadingRecap}
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            {loadingRecap ? t("editor.generating") : t("editor.recap")}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t("editor.delete")}
+          </Button>
+          <PresenceAvatars />
+          <CollaboratorsDialog noteId={note.id} noteTitle={title} />
+          <ShareNoteDialog 
+            noteId={note.id}
+            isPublic={isPublic}
+            publicUuid={publicUuid}
+            onTogglePublic={handleTogglePublic}
+          />
+          <ExportDialog 
+            noteTitle={title}
+            noteBody={body}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowComments(!showComments)}
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Comments
+          </Button>
+          <div className="text-xs text-muted-foreground ml-auto">
+            {t("editor.last_edited")} {new Date(note.updated_at).toLocaleDateString()}
+          </div>
         </div>
-      </div>
-      <div className="flex-1 overflow-y-auto p-6" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-        <div className="max-w-3xl mx-auto space-y-4">
-          {recap && (
-            <Card className="bg-primary/5">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold mb-2">AI Recap</h3>
-                    <p className="text-sm text-muted-foreground">{recap}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {isDragging && (
-            <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 pointer-events-none">
-              <div className="bg-background p-8 rounded-lg border-2 border-dashed border-primary">
-                <p className="text-lg font-semibold">Drop file to upload</p>
-              </div>
-            </div>
-          )}
-
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-3xl font-bold border-none p-0 focus-visible:ring-0"
-            placeholder="Untitled"
-          />
-          <Textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className="min-h-[500px] border-none p-0 focus-visible:ring-0 resize-none text-base"
-            placeholder={t("editor.start_writing")}
-          />
-
-          <div className="pt-4 border-t space-y-4">
-            {suggestedTags.length > 0 && (
-              <Card className="bg-accent/50 mb-4">
-                <CardContent className="pt-4">
-                  <div className="flex items-start gap-2">
-                    <TagIcon className="h-5 w-5 text-primary mt-0.5" />
-                    <div className="flex-1">
-                      <h3 className="font-semibold mb-2">Suggested Tags</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {suggestedTags.map((tag, idx) => (
-                          <Badge key={idx} variant="secondary">
-                            {tag}
-                          </Badge>
-                        ))}
+        <div className="flex-1 overflow-y-auto flex">
+          <div className="flex-1" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+            <div className="max-w-3xl mx-auto p-6 space-y-4">
+              {recap && (
+                <Card className="bg-primary/5">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold mb-2">AI Recap</h3>
+                        <p className="text-sm text-muted-foreground">{recap}</p>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-medium">{t('editor.tags')}</h4>
-              <div className="flex items-center gap-2">
-                <Input
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder={t('editor.add_tag_placeholder')}
-                  className="h-8"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newTagName.trim()) {
-                      addTagToNote(newTagName.trim());
-                      setNewTagName('');
-                    }
-                  }}
+              {isDragging && (
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 pointer-events-none">
+                  <div className="bg-background p-8 rounded-lg border-2 border-dashed border-primary">
+                    <p className="text-lg font-semibold">Drop file to upload</p>
+                  </div>
+                </div>
+              )}
+
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="text-3xl font-bold border-none p-0 focus-visible:ring-0"
+                placeholder="Untitled"
+              />
+              
+              <CollaborativeEditor noteId={note.id}>
+                <Textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  className="min-h-[500px] border-none p-0 focus-visible:ring-0 resize-none text-base"
+                  placeholder={t("editor.start_writing")}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (newTagName.trim()) {
-                      addTagToNote(newTagName.trim());
-                      setNewTagName('');
-                    }
-                  }}
-                >
-                  {t('editor.add_tag')}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={generateTagSuggestions}
-                  disabled={loadingTags}
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {loadingTags ? t("editor.suggesting") : t("editor.suggest_tags")}
-                </Button>
+              </CollaborativeEditor>
+
+              <div className="pt-4 border-t space-y-4">
                 {suggestedTags.length > 0 && (
-                  <Button variant="default" size="sm" onClick={saveSuggestedTags} disabled={savingTags}>
-                    <TagIcon className="h-4 w-4 mr-2" />
-                    {savingTags ? t('insights.generating') : t('editor.save_tags')}
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {noteTags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                  {tag}
-                  <button
-                    className="ml-1 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => removeTagFromNote(tag)}
-                    aria-label={t('editor.remove_tag')}
-                  >
-                    ×
-                  </button>
-                </Badge>
-              ))}
-            </div>
-
-            {/* Attachments Section */}
-            <div className="pt-4 border-t">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium">{t('editor.attachments')}</h4>
-                <div className="flex flex-col items-end gap-1">
-                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    {isUploading ? t('editor.uploading') : t('editor.upload_file')}
-                  </Button>
-                  {isUploading && (
-                    <div className="w-full mt-1">
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-2 bg-primary animate-pulse w-full" style={{ width: '100%' }} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={(e) => e.target.files && handleFileUpload(e.target.files[0])}
-                  className="hidden"
-                />
-              </div>
-              <div className="space-y-2">
-                {attachments.map(att => (
-                  <Card key={att.id} className="p-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileIcon className="h-5 w-5 text-muted-foreground" />
+                  <Card className="bg-accent/50 mb-4">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start gap-2">
+                        <TagIcon className="h-5 w-5 text-primary mt-0.5" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium truncate">{att.filename}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatBytes(att.filesize)} - {new Date(att.uploaded_at).toLocaleDateString()}
-                          </p>
+                          <h3 className="font-semibold mb-2">Suggested Tags</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {suggestedTags.map((tag, idx) => (
+                              <Badge key={idx} variant="secondary">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleDownloadAttachment(att)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteAttachment(att.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
+                    </CardContent>
                   </Card>
-                ))}
+                )}
+
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium">{t('editor.tags')}</h4>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newTagName}
+                      onChange={(e) => setNewTagName(e.target.value)}
+                      placeholder={t('editor.add_tag_placeholder')}
+                      className="h-8"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newTagName.trim()) {
+                          addTagToNote(newTagName.trim());
+                          setNewTagName('');
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (newTagName.trim()) {
+                          addTagToNote(newTagName.trim());
+                          setNewTagName('');
+                        }
+                      }}
+                    >
+                      {t('editor.add_tag')}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={generateTagSuggestions}
+                      disabled={loadingTags}
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      {loadingTags ? t("editor.suggesting") : t("editor.suggest_tags")}
+                    </Button>
+                    {suggestedTags.length > 0 && (
+                      <Button variant="default" size="sm" onClick={saveSuggestedTags} disabled={savingTags}>
+                        <TagIcon className="h-4 w-4 mr-2" />
+                        {savingTags ? t('insights.generating') : t('editor.save_tags')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {noteTags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <button
+                        className="ml-1 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => removeTagFromNote(tag)}
+                        aria-label={t('editor.remove_tag')}
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+
+                {/* Attachments Section */}
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium">{t('editor.attachments')}</h4>
+                    <div className="flex flex-col items-end gap-1">
+                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {isUploading ? t('editor.uploading') : t('editor.upload_file')}
+                      </Button>
+                      {isUploading && (
+                        <div className="w-full mt-1">
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-2 bg-primary animate-pulse w-full" style={{ width: '100%' }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={(e) => e.target.files && handleFileUpload(e.target.files[0])}
+                      className="hidden"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    {attachments.map(att => (
+                      <Card key={att.id} className="p-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FileIcon className="h-5 w-5 text-muted-foreground" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium truncate">{att.filename}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatBytes(att.filesize)} - {new Date(att.uploaded_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleDownloadAttachment(att)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteAttachment(att.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Comments Sidebar */}
+          {showComments && (
+            <div className="w-80 border-l border-border overflow-y-auto p-4">
+              <Comments noteId={note.id} />
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </CollaborationProvider>
   );
 }

@@ -130,10 +130,11 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
       setOpen(isOpen);
       if (isOpen) loadSharedUsers();
     }}>
+      {/* Use a span as the trigger to avoid nested button warning */}
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
+        <span style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
           <Users className="h-4 w-4" />
-        </Button>
+        </span>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -182,13 +183,19 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
                       </div>
                       <span className="text-sm">{user.nickname}</span>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
                       onClick={() => handleShareWithUser(user.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleShareWithUser(user.id);
+                        }
+                      }}
                     >
                       <User className="h-4 w-4" />
-                    </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -218,13 +225,19 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
                       )}
                     </div>
                     {share.permission !== 'owner' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
                         onClick={() => handleRemoveUser(share.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleRemoveUser(share.id);
+                          }
+                        }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      </div>
                     )}
                   </div>
                 ))}

@@ -13,6 +13,7 @@ import GraphView from "./pages/GraphView";
 import ProfileSetup from "./pages/ProfileSetup";
 import SharedNote from "./pages/SharedNote";
 import NotFound from "./pages/NotFound";
+import { CollaborationProvider } from '@/components/collaboration/CollaborationProvider';
 
 const queryClient = new QueryClient();
 
