@@ -45,7 +45,9 @@ const isInvite = (n: any) => String(n?.type || '').includes('invite');
 
 const getNotificationBody = (n: any) => {
   // First, try the content field from unified schema
-  if (n?.content) return n.content as string;
+  if (n?.content && n.content.trim().length > 0) {
+    return n.content as string;
+  }
   
   // If no content but it's an invite, construct a message
   if (isInvite(n)) {
@@ -63,8 +65,13 @@ const getNotificationBody = (n: any) => {
   if (t === 'share_accept') return 'Your invitation was accepted.';
   if (t === 'note_fork') return 'Your note has been forked.';
   
-  // Return null if we can't determine content
-  return null;
+  // Fallback to title if available
+  if (n?.title && n.title.trim().length > 0) {
+    return n.title;
+  }
+  
+  // Last resort fallback
+  return 'You have a new notification';
 };
 
 export const NotificationsMenu = () => {
