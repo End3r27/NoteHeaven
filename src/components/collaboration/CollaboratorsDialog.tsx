@@ -143,6 +143,11 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
       });
     } catch (notificationError) {
         console.error('Failed to send notification', notificationError);
+        toast({
+            title: "Notification failed",
+            description: "The invitation was sent, but the notification could not be delivered.",
+            variant: "destructive",
+        });
     }
 
     toast({
