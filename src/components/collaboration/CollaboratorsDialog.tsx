@@ -100,34 +100,74 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
   };
 
   const handleInvite = async (userId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
 
-    const { error } = await supabase.from('shared_notes').insert({
-      note_id: noteId,
-      invited_by: user.id,
+  const { error } = await supabase.from('shared_notes').insert({
+    note_id: noteId,
+    invited_by: user.id,
+    user_id: userId,
+    permission: selectedPermission,
+    accepted: false,
+  });
+
+  if (error) {
+    if (error.code === '23505') {
+      toast({
+        title: 'Already invited',
+        description: 'This user is already a collaborator',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Failed to invite user',
+        variant: 'destructive',
+      });
+    }
+    return;
+  }
+
+  // Get sender's profile information
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('nickname')
+    .eq('id', user.id)
+    .single();
+
+  const senderName = profile?.nickname || 'A user';
+
+  // Create notification
+  const { error: notificationError } = await supabase
+    .from('notifications')
+    .insert({
       user_id: userId,
-      permission: selectedPermission,
-      accepted: false,
+      sender_id: user.id,
+      type: 'share_invite',
+      title: 'Note invitation',
+      content: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
+      resource_id: noteId,
+      resource_type: 'note'
     });
 
-    if (error) {
-      if (error.code === '23505') {
-        toast({
-          title: 'Already invited',
-          description: 'This user is already a collaborator',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to invite user',
-          variant: 'destructive',
-        });
-      }
-      return;
-    }
+  if (notificationError) {
+      console.error('Failed to send notification', notificationError);
+      toast({
+          title: "Notification failed",
+          description: `The notification could not be delivered: ${notificationError.message}`,
+          variant: "destructive",
+      });
+  }
 
+  toast({
+    title: 'Invitation sent!',
+    description: 'The user will be notified',
+  });
+
+  setSearchQuery('');
+  setSearchResults([]);
+  fetchCollaborators();
+};
     // Create notification
     const senderName = user.user_metadata?.full_name || 'A user';
     const { error: notificationError } = await sendNotification(supabase, {

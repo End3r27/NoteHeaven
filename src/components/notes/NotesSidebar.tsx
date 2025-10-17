@@ -72,24 +72,22 @@ export function NotesSidebar({
   const { t } = useLanguage();
   const MAX_STORAGE = 2.5 * 1024 * 1024 * 1024; // 2.5GB in bytes
 
-  const fetchStorage = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+const fetchStorage = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
 
-    // Removed .single() for debugging the 406 error
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('used_storage')
-      .eq('id', user.id);
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('used_storage')
+    .eq('id', user.id)
+    .single();
 
-    if (error) {
-      console.error("Error fetching storage (debugging):", error);
-    } else if (data && data.length === 1) {
-      setUsedStorage(data[0].used_storage || 0);
-    } else if (data) {
-      console.warn("Expected 1 profile for storage fetch, but got:", data.length);
-    }
-  };
+  if (error) {
+    console.error("Error fetching storage:", error);
+  } else if (data) {
+    setUsedStorage(data.used_storage || 0);
+  }
+};
 
   // Fetch storage on mount
   useEffect(() => {

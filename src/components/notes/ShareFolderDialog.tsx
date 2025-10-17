@@ -72,43 +72,73 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
   };
 
   const handleShareWithUser = async (userId: string) => {
-    const { data: currentUser } = await supabase.auth.getUser();
-    if (!currentUser.user) return;
+  const { data: currentUser } = await supabase.auth.getUser();
+  if (!currentUser.user) return;
 
-    const { error } = await supabase
-      .from('shared_folders')
-      .insert({
-        folder_id: folderId,
-        user_id: userId,
-        permission: selectedPermission,
-        invited_by: currentUser.user.id,
-        accepted: false
+  const { error } = await supabase
+    .from('shared_folders')
+    .insert({
+      folder_id: folderId,
+      user_id: userId,
+      permission: selectedPermission,
+      invited_by: currentUser.user.id,
+      accepted: false
+    });
+
+  if (error) {
+    if (error.code === '23505') {
+      toast({
+        title: "Already shared",
+        description: "This folder is already shared with this user",
+        variant: "destructive"
       });
-
-    if (error) {
-      if (error.code === '23505') {
-        toast({
-          title: "Already shared",
-          description: "This folder is already shared with this user",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to share folder",
-          variant: "destructive"
-        });
-      }
     } else {
       toast({
-        title: "Invite sent!",
-        description: "The user will be notified"
+        title: "Error",
+        description: "Failed to share folder",
+        variant: "destructive"
       });
-      setSearchQuery("");
-      setSearchResults([]);
-      loadSharedUsers();
     }
-  };
+  } else {
+    // Create notification directly using Supabase
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nickname')
+      .eq('id', currentUser.user.id)
+      .single();
+
+    const senderName = profile?.nickname || 'A user';
+
+    const { error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        sender_id: currentUser.user.id,
+        type: 'share_invite',
+        title: 'Folder invitation',
+        content: `${senderName} invited you to collaborate on the folder: "${folderName}"`,
+        resource_id: folderId,
+        resource_type: 'folder'
+      });
+
+    if (notificationError) {
+      console.error('Failed to send notification', notificationError);
+      toast({
+        title: "Notification failed",
+        description: `The notification could not be delivered: ${notificationError.message}`,
+        variant: "destructive",
+      });
+    }
+
+    toast({
+      title: "Invite sent!",
+      description: "The user will be notified"
+    });
+    setSearchQuery("");
+    setSearchResults([]);
+    loadSharedUsers();
+  }
+};
 
   const handleRemoveUser = async (shareId: string) => {
     const { error } = await supabase
