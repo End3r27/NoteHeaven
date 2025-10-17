@@ -109,7 +109,7 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     }
   };
 
- const handleInvite = async (userId: string) => {
+const handleInvite = async (userId: string) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
   if (userId === user.id) {
@@ -121,85 +121,94 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     return;
   }
 
-  // Try shared_with schema first, then fallback to user_id schema
-  let inviteError = null as any;
-  let res = await supabase
-    .from('shared_notes')
-    .upsert(
-      {
-        note_id: noteId,
-        shared_by: user.id,
-        shared_with: userId,
-        permission: selectedPermission,
-        accepted: false,
-      } as any,
-      { onConflict: 'note_id,shared_with' }
-    );
-  inviteError = res.error;
-  if (inviteError) {
-    res = await supabase
+  try {
+    // Try shared_with schema first, then fallback to user_id schema
+    let inviteError = null as any;
+    let res = await supabase
       .from('shared_notes')
       .upsert(
         {
           note_id: noteId,
-          invited_by: user.id,
-          user_id: userId,
+          shared_by: user.id,
+          shared_with: userId,
           permission: selectedPermission,
           accepted: false,
         } as any,
-        { onConflict: 'note_id,user_id' }
+        { onConflict: 'note_id,shared_with' }
       );
     inviteError = res.error;
-  }
+    if (inviteError) {
+      res = await supabase
+        .from('shared_notes')
+        .upsert(
+          {
+            note_id: noteId,
+            invited_by: user.id,
+            user_id: userId,
+            permission: selectedPermission,
+            accepted: false,
+          } as any,
+          { onConflict: 'note_id,user_id' }
+        );
+      inviteError = res.error;
+    }
 
-  if (inviteError) {
+    if (inviteError) {
+      throw new Error('Failed to create share invitation');
+    }
+
+    // Get sender's profile information
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nickname')
+      .eq('id', user.id)
+      .single();
+
+    const senderName = profile?.nickname || 'A user';
+
+    // Create notification with all required fields
+    const { data: notification, error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        sender_id: user.id,
+        type: 'share_invite',
+        title: 'Note invitation',
+        message: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
+        resource_id: noteId,
+        resource_type: 'note',
+        is_read: false
+      })
+      .select()
+      .single();
+
+    if (notificationError) {
+      console.error('Failed to send notification:', notificationError);
+      // Don't fail the whole operation if notification fails
+      toast({
+        title: "Invitation sent with warning",
+        description: "The user was invited but notification failed to deliver",
+        variant: "default",
+      });
+    } else {
+      console.log('Notification created successfully:', notification);
+      toast({
+        title: 'Invitation sent!',
+        description: 'The user will be notified',
+      });
+    }
+
+    setSearchQuery('');
+    setSearchResults([]);
+    fetchCollaborators();
+  } catch (error: any) {
+    console.error('Error in handleInvite:', error);
     toast({
       title: 'Error',
-      description: 'Failed to invite user',
+      description: error.message || 'Failed to invite user',
       variant: 'destructive',
     });
-    return;
   }
-
-  // Get sender's profile information
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('nickname')
-    .eq('id', user.id)
-    .single();
-
-  const senderName = profile?.nickname || 'A user';
-
-  // Create notification
-  const { error: notificationError } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: userId,
-      sender_id: user.id,
-      type: 'share_invite',
-      title: 'Note invitation',
-      content: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
-      resource_id: noteId,
-      resource_type: 'note'
-    });
-
-  if (notificationError) {
-    console.error('Failed to send notification', notificationError);
-    toast({
-      title: "Notification failed",
-      description: `The notification could not be delivered: ${notificationError.message}`,
-      variant: "destructive",
-    });
-  }
-
-  toast({
-    title: 'Invitation sent!',
-    description: 'The user will be notified',
-  });
-
-  setSearchQuery('');
-  setSearchResults([]);
-  fetchCollaborators();
 };
 
   return (
