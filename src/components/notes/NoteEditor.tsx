@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Attachment } from "@/types/attachment";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language/LanguageProvider";
+import { ShareNoteDialog } from "./ShareNoteDialog";
+import { ExportDialog } from "./ExportDialog";
 
 interface Note {
   id: string;
@@ -48,6 +50,8 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [newTagName, setNewTagName] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
+  const [publicUuid, setPublicUuid] = useState<string | null>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +63,20 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
     setRecap("");
     setSuggestedTags([]);
     fetchAttachments();
+    
+    // Load sharing status
+    (async () => {
+      const { data } = await supabase
+        .from('notes')
+        .select('is_public, public_uuid')
+        .eq('id', note.id)
+        .single();
+      
+      if (data) {
+        setIsPublic(data.is_public || false);
+        setPublicUuid(data.public_uuid);
+      }
+    })();
 
     // Load note tags and all tags
     (async () => {
@@ -87,6 +105,27 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   };
 
   const handleDelete = () => onDelete(note.id);
+
+  const handleTogglePublic = async (newPublicState: boolean) => {
+    const { error } = await supabase
+      .from('notes')
+      .update({ is_public: newPublicState })
+      .eq('id', note.id);
+
+    if (!error) {
+      setIsPublic(newPublicState);
+      toast({
+        title: newPublicState ? "Note is now public" : "Note is now private",
+        description: newPublicState ? "Anyone with the link can view" : "Only you and shared users can view"
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update sharing settings",
+        variant: "destructive"
+      });
+    }
+  };
 
   const generateRecap = async () => {
     setLoadingRecap(true);
@@ -406,6 +445,16 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
           <Trash2 className="h-4 w-4 mr-2" />
           {t("editor.delete")}
         </Button>
+        <ShareNoteDialog 
+          noteId={note.id}
+          isPublic={isPublic}
+          publicUuid={publicUuid}
+          onTogglePublic={handleTogglePublic}
+        />
+        <ExportDialog 
+          noteTitle={title}
+          noteBody={body}
+        />
         <div className="text-xs text-muted-foreground ml-auto">
           {t("editor.last_edited")} {new Date(note.updated_at).toLocaleDateString()}
         </div>

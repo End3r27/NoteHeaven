@@ -16,6 +16,7 @@ import { Folder, Tag, LogOut, Plus, Trash2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language/LanguageProvider";
+import { ShareFolderDialog } from "./ShareFolderDialog";
 import {
   Dialog,
   DialogContent,
@@ -164,19 +165,22 @@ export function NotesSidebar({
                   >
                     <Folder className="h-4 w-4" />
                     <span>{folder.name}</span>
-                    <Button asChild className="ml-auto h-6 w-6 p-0 opacity-0 group-hover:opacity-100">
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteFolder(folder.id);
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        className="flex items-center justify-center h-6 w-6"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </div>
-                    </Button>
+                    <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                      <ShareFolderDialog folderId={folder.id} folderName={folder.name} />
+                      <Button asChild className="h-6 w-6 p-0">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteFolder(folder.id);
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          className="flex items-center justify-center h-6 w-6"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </div>
+                      </Button>
+                    </div>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
