@@ -24,12 +24,15 @@ interface Notification {
   resource_type?: string;
   is_read: boolean;
   created_at: string;
+  sender?: {
+    nickname: string;
+  };
 }
 
 export const NotificationsMenu = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -37,14 +40,17 @@ export const NotificationsMenu = () => {
     const fetchNotifications = async () => {
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select(`
+          *,
+          sender:profiles!notifications_sender_id_fkey(nickname)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching notifications:', error);
       } else {
-        setNotifications(data as Notification[]);
+        setNotifications(data || []);
       }
     };
 
@@ -64,8 +70,20 @@ export const NotificationsMenu = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
+        async (payload) => {
+          // Fetch the complete notification with sender info
+          const { data } = await supabase
+            .from('notifications')
+            .select(`
+              *,
+              sender:profiles!notifications_sender_id_fkey(nickname)
+            `)
+            .eq('id', payload.new.id)
+            .single();
+          
+          if (data) {
+            setNotifications((prev) => [data, ...prev]);
+          }
         }
       )
       .subscribe();
@@ -109,7 +127,7 @@ export const NotificationsMenu = () => {
     }
   };
 
-  const handleAcceptInvite = async (notification: Notification) => {
+  const handleAcceptInvite = async (notification: any) => {
     if (!notification.resource_id || !notification.resource_type) return;
 
     if (notification.resource_type === 'note') {
@@ -155,7 +173,7 @@ export const NotificationsMenu = () => {
     }
   };
 
-  const handleDeclineInvite = async (notification: Notification) => {
+  const handleDeclineInvite = async (notification: any) => {
     if (!notification.resource_id || !notification.resource_type) return;
 
     if (notification.resource_type === 'note') {
@@ -234,6 +252,11 @@ export const NotificationsMenu = () => {
                     {notification.content && (
                       <p className="text-xs text-muted-foreground mt-1">
                         {notification.content}
+                      </p>
+                    )}
+                    {notification.sender?.nickname && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        From: {notification.sender.nickname}
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
