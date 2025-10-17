@@ -10,6 +10,8 @@ ADD COLUMN IF NOT EXISTS favorite_color TEXT DEFAULT '#3b82f6',
 ADD COLUMN IF NOT EXISTS is_profile_complete BOOLEAN DEFAULT false;
 
 -- Add constraints
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS nickname_length;
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS bio_length;
 ALTER TABLE public.profiles
 ADD CONSTRAINT nickname_length CHECK (char_length(nickname) >= 2 AND char_length(nickname) <= 50),
 ADD CONSTRAINT bio_length CHECK (char_length(bio) <= 200);
@@ -83,7 +85,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_notifications_recipient_id ON public.notifications(recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications(read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications(created_at);
 
@@ -167,15 +169,15 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own notifications"
 ON public.notifications FOR SELECT
-USING (auth.uid() = recipient_id);
+USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own notifications"
 ON public.notifications FOR UPDATE
-USING (auth.uid() = recipient_id);
+USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own notifications"
 ON public.notifications FOR DELETE
-USING (auth.uid() = recipient_id);
+USING (auth.uid() = user_id);
 
 -- Function to clean up old presence data
 CREATE OR REPLACE FUNCTION public.cleanup_old_presence()
@@ -214,6 +216,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS set_updated_at_comments ON public.comments;
 CREATE TRIGGER set_updated_at_comments
   BEFORE UPDATE ON public.comments
   FOR EACH ROW EXECUTE FUNCTION public.update_comment_timestamp();

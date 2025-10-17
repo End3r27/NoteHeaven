@@ -129,23 +129,23 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     }
 
     // Create notification
-    try {
-      const senderName = user.user_metadata?.full_name || 'A user';
-      await sendNotification(supabase, {
-        userId: userId,
-        senderId: user.id,
-        type: 'invite',
-        message: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
-        data: {
-          noteId: noteId,
-          senderName: senderName,
-        },
-      });
-    } catch (notificationError) {
+    const senderName = user.user_metadata?.full_name || 'A user';
+    const { error: notificationError } = await sendNotification(supabase, {
+      userId: userId,
+      senderId: user.id,
+      type: 'invite',
+      message: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
+      data: {
+        noteId: noteId,
+        senderName: senderName,
+      },
+    });
+
+    if (notificationError) {
         console.error('Failed to send notification', notificationError);
         toast({
             title: "Notification failed",
-            description: "The invitation was sent, but the notification could not be delivered.",
+            description: `The notification could not be delivered: ${notificationError.message}`,
             variant: "destructive",
         });
     }

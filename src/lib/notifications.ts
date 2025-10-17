@@ -22,9 +22,8 @@ export const sendNotification = async (
   });
 
   if (error) {
-    console.error("Error sending notification:", error);
-    throw error;
+    console.error("DATABASE ERROR sending notification:", error);
   }
 
-  return data;
+  return { data, error };
 };
