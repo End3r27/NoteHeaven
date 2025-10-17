@@ -76,16 +76,18 @@ export function NotesSidebar({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Removed .single() for debugging the 406 error
     const { data, error } = await supabase
       .from('profiles')
       .select('used_storage')
-      .eq('id', user.id)
-      .single();
+      .eq('id', user.id);
 
     if (error) {
-      console.error("Error fetching storage:", error);
-    } else if (data?.used_storage != null) {
-      setUsedStorage(data.used_storage);
+      console.error("Error fetching storage (debugging):", error);
+    } else if (data && data.length === 1) {
+      setUsedStorage(data[0].used_storage || 0);
+    } else if (data) {
+      console.warn("Expected 1 profile for storage fetch, but got:", data.length);
     }
   };
 
