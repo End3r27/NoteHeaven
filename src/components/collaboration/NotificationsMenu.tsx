@@ -29,55 +29,74 @@ interface Notification {
   };
 }
 
-const getSenderName = (n: any) => {
-  // Try sender object first, then fallback to default
-  return n?.sender?.nickname || 'Someone';
+const getNotificationMessage = (notification: Notification): string => {
+  // If we have content, use it
+  if (notification.content && notification.content.trim().length > 0) {
+    return notification.content;
+  }
+
+  // Construct message based on type
+  const senderName = notification.sender?.nickname || 'Someone';
+  const type = notification.type || '';
+  
+  switch (type) {
+    case 'share_invite':
+      if (notification.resource_type === 'folder') {
+        return `${senderName} invited you to collaborate on a folder`;
+      } else if (notification.resource_type === 'note') {
+        return `${senderName} invited you to collaborate on a note`;
+      }
+      return `${senderName} invited you to collaborate`;
+    
+    case 'new_comment':
+      return `${senderName} commented on your note`;
+    
+    case 'comment_reply':
+      return `${senderName} replied to your comment`;
+    
+    case 'share_accept':
+      return `${senderName} accepted your invitation`;
+    
+    case 'note_fork':
+      return `${senderName} forked your note`;
+    
+    default:
+      // Fallback to title if available
+      return notification.title || 'You have a new notification';
+  }
 };
 
-const getResource = (n: any) => {
-  // Use the unified schema fields directly
-  const id = n?.resource_id || null;
-  const type = n?.resource_type || null;
-  return { id, type } as { id: string | null; type: 'note' | 'folder' | null };
+const getNotificationTitle = (notification: Notification): string => {
+  if (notification.title && notification.title.trim().length > 0) {
+    return notification.title;
+  }
+
+  const type = notification.type || '';
+  
+  switch (type) {
+    case 'share_invite':
+      return 'Invitation to collaborate';
+    case 'new_comment':
+      return 'New comment';
+    case 'comment_reply':
+      return 'Comment reply';
+    case 'share_accept':
+      return 'Invitation accepted';
+    case 'note_fork':
+      return 'Note forked';
+    default:
+      return 'Notification';
+  }
 };
 
-const isInvite = (n: any) => String(n?.type || '').includes('invite');
-
-const getNotificationBody = (n: any) => {
-  // First, try the content field from unified schema
-  if (n?.content && n.content.trim().length > 0) {
-    return n.content as string;
-  }
-  
-  // If no content but it's an invite, construct a message
-  if (isInvite(n)) {
-    const who = getSenderName(n);
-    const { type } = getResource(n);
-    const where = type === 'folder' ? 'folder' : type === 'note' ? 'note' : 'resource';
-    return `${who} invited you to collaborate on the ${where}.`;
-  }
-  
-  // Default messages based on type
-  const t = String(n?.type || '');
-  if (t === 'new_comment') return 'You have a new comment.';
-  if (t === 'comment_reply') return 'Someone replied to your comment.';
-  if (t === 'edit') return 'Your shared content was edited.';
-  if (t === 'share_accept') return 'Your invitation was accepted.';
-  if (t === 'note_fork') return 'Your note has been forked.';
-  
-  // Fallback to title if available
-  if (n?.title && n.title.trim().length > 0) {
-    return n.title;
-  }
-  
-  // Last resort fallback
-  return 'You have a new notification';
+const isInvite = (notification: Notification): boolean => {
+  return notification.type === 'share_invite';
 };
 
 export const NotificationsMenu = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -95,6 +114,7 @@ export const NotificationsMenu = () => {
       if (error) {
         console.error('Error fetching notifications:', error);
       } else {
+        console.log('Fetched notifications:', data);
         setNotifications(data || []);
       }
     };
@@ -129,7 +149,6 @@ export const NotificationsMenu = () => {
             if (!error && data) {
               setNotifications((prev) => [data as any, ...prev]);
             } else {
-              // Fallback to raw payload if refetch fails
               setNotifications((prev) => [payload.new as Notification, ...prev]);
             }
           } catch (e) {
@@ -178,8 +197,8 @@ export const NotificationsMenu = () => {
     }
   };
 
-  const handleAcceptInvite = async (notification: any) => {
-    const { id, type } = getResource(notification);
+  const handleAcceptInvite = async (notification: Notification) => {
+    const { resource_id: id, resource_type: type } = notification;
     if (!id || !type) return;
 
     let error = null as any;
@@ -202,16 +221,14 @@ export const NotificationsMenu = () => {
       return;
     }
 
-    // Delete the notification after successful action
     await supabase.from('notifications').delete().eq('id', notification.id);
-    // Optimistically remove it from UI
     setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
 
     toast({ title: 'Invitation accepted', description: `Access granted to the ${type}.` });
   };
 
-  const handleDeclineInvite = async (notification: any) => {
-    const { id, type } = getResource(notification);
+  const handleDeclineInvite = async (notification: Notification) => {
+    const { resource_id: id, resource_type: type } = notification;
     if (!id || !type) return;
 
     let error = null as any;
@@ -234,7 +251,6 @@ export const NotificationsMenu = () => {
       return;
     }
 
-    // Delete the notification after successful decline
     await supabase.from('notifications').delete().eq('id', notification.id);
     setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
 
@@ -283,25 +299,11 @@ export const NotificationsMenu = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="text-sm font-medium">
-                      {notification.title ||
-                        (isInvite(notification)
-                          ? 'Invitation to collaborate'
-                          : String(notification.type || '').replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()) ||
-                            'Notification')}
+                      {getNotificationTitle(notification)}
                     </p>
-                    {(() => {
-                      const body = getNotificationBody(notification as Notification);
-                      return body ? (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {body}
-                        </p>
-                      ) : null;
-                    })()}
-                    {notification.sender?.nickname && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        From: {notification.sender.nickname}
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {getNotificationMessage(notification)}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(notification.created_at).toLocaleString()}
                     </p>
@@ -317,7 +319,7 @@ export const NotificationsMenu = () => {
                     </Button>
                   )}
                 </div>
-                {isInvite(notification) && getResource(notification).id && (
+                {isInvite(notification) && notification.resource_id && (
                   <div className="flex gap-2">
                     <Button
                       size="sm"
