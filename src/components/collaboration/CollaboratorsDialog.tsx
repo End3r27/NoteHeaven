@@ -99,7 +99,7 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     }
   };
 
-  const handleInvite = async (userId: string) => {
+ const handleInvite = async (userId: string) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
@@ -151,12 +151,12 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     });
 
   if (notificationError) {
-      console.error('Failed to send notification', notificationError);
-      toast({
-          title: "Notification failed",
-          description: `The notification could not be delivered: ${notificationError.message}`,
-          variant: "destructive",
-      });
+    console.error('Failed to send notification', notificationError);
+    toast({
+      title: "Notification failed",
+      description: `The notification could not be delivered: ${notificationError.message}`,
+      variant: "destructive",
+    });
   }
 
   toast({
@@ -168,75 +168,6 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
   setSearchResults([]);
   fetchCollaborators();
 };
-    // Create notification
-    const senderName = user.user_metadata?.full_name || 'A user';
-    const { error: notificationError } = await sendNotification(supabase, {
-      userId: userId,
-      senderId: user.id,
-      type: 'invite',
-      message: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
-      data: {
-        noteId: noteId,
-        senderName: senderName,
-      },
-    });
-
-    if (notificationError) {
-        console.error('Failed to send notification', notificationError);
-        toast({
-            title: "Notification failed",
-            description: `The notification could not be delivered: ${notificationError.message}`,
-            variant: "destructive",
-        });
-    }
-
-    toast({
-      title: 'Invitation sent!',
-      description: 'The user will be notified',
-    });
-
-    setSearchQuery('');
-    setSearchResults([]);
-    fetchCollaborators();
-  };
-
-  const handleRemove = async (shareId: string) => {
-    const { error } = await supabase.from('shared_notes').delete().eq('id', shareId);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to remove collaborator',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    toast({
-      title: 'Removed',
-      description: 'Collaborator removed from note',
-    });
-
-    fetchCollaborators();
-  };
-
-  const handlePermissionChange = async (shareId: string, permission: 'viewer' | 'editor') => {
-    const { error } = await supabase
-      .from('shared_notes')
-      .update({ permission })
-      .eq('id', shareId);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update permission',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    fetchCollaborators();
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
