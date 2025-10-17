@@ -29,6 +29,18 @@ interface Notification {
   };
 }
 
+const getNotificationBody = (n: Notification) => {
+  if (n.content) return n.content;
+  if (n.type === 'share_invite') {
+    const who = n.sender?.nickname || 'Someone';
+    const where =
+      n.resource_type === 'folder' ? 'folder' :
+      n.resource_type === 'note' ? 'note' : 'resource';
+    return `${who} invited you to collaborate on the ${where}.`;
+  }
+  return null;
+};
+
 export const NotificationsMenu = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -238,11 +250,14 @@ export const NotificationsMenu = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="text-sm font-medium">{notification.title}</p>
-                    {notification.content && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {notification.content}
-                      </p>
-                    )}
+                    {(() => {
+                      const body = getNotificationBody(notification as Notification);
+                      return body ? (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {body}
+                        </p>
+                      ) : null;
+                    })()}
                     {notification.sender?.nickname && (
                       <p className="text-xs text-muted-foreground mt-1">
                         From: {notification.sender.nickname}
