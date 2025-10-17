@@ -109,9 +109,26 @@ export const NotificationsMenu = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
-          console.log("--- REALTIME NOTIFICATION RECEIVED ---", payload.new);
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
+        async (payload) => {
+          try {
+            const { data, error } = await supabase
+              .from('notifications')
+              .select(`
+                id, user_id, sender_id, type, title, content, resource_id, resource_type, is_read, created_at,
+                sender:profiles!notifications_sender_id_fkey(nickname)
+              `)
+              .eq('id', (payload.new as any).id)
+              .single();
+
+            if (!error && data) {
+              setNotifications((prev) => [data as any, ...prev]);
+            } else {
+              // Fallback to raw payload if refetch fails
+              setNotifications((prev) => [payload.new as Notification, ...prev]);
+            }
+          } catch (e) {
+            setNotifications((prev) => [payload.new as Notification, ...prev]);
+          }
         }
       )
       .subscribe();
