@@ -29,42 +29,41 @@ interface Notification {
   };
 }
 
-const getSenderName = (n: any) =>
-  n?.sender?.nickname || n?.data?.senderName || n?.payload?.senderName || 'Someone';
+const getSenderName = (n: any) => {
+  // Try sender object first, then fallback to default
+  return n?.sender?.nickname || 'Someone';
+};
 
 const getResource = (n: any) => {
-  const id =
-    n?.resource_id ||
-    n?.data?.noteId ||
-    n?.data?.folderId ||
-    n?.payload?.resource_id ||
-    n?.payload?.note_id ||
-    n?.payload?.folder_id || null;
-
-  let type =
-    n?.resource_type ||
-    (n?.data?.folderId ? 'folder' : n?.data?.noteId ? 'note' : null) ||
-    n?.payload?.resource_type || null;
+  // Use the unified schema fields directly
+  const id = n?.resource_id || null;
+  const type = n?.resource_type || null;
   return { id, type } as { id: string | null; type: 'note' | 'folder' | null };
 };
 
 const isInvite = (n: any) => String(n?.type || '').includes('invite');
 
 const getNotificationBody = (n: any) => {
+  // First, try the content field from unified schema
   if (n?.content) return n.content as string;
-  if (n?.message) return String(n.message);
+  
+  // If no content but it's an invite, construct a message
   if (isInvite(n)) {
     const who = getSenderName(n);
     const { type } = getResource(n);
     const where = type === 'folder' ? 'folder' : type === 'note' ? 'note' : 'resource';
     return `${who} invited you to collaborate on the ${where}.`;
   }
+  
+  // Default messages based on type
   const t = String(n?.type || '');
   if (t === 'new_comment') return 'You have a new comment.';
   if (t === 'comment_reply') return 'Someone replied to your comment.';
   if (t === 'edit') return 'Your shared content was edited.';
   if (t === 'share_accept') return 'Your invitation was accepted.';
   if (t === 'note_fork') return 'Your note has been forked.';
+  
+  // Return null if we can't determine content
   return null;
 };
 
