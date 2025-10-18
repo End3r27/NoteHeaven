@@ -292,15 +292,8 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>{t('collaboration.manage_collaborators')}</span>
-            {collaborators.length > 0 && (
-              <PresenceAvatars 
-                collaborators={collaborators.map(c => ({ user_id: c.userId, permission: c.permission, accepted: c.accepted }))}
-                type="note"
-                resourceId={noteId}
-              />
-            )}
+          <DialogTitle>
+            {t('collaboration.manage_collaborators')}
           </DialogTitle>
           <DialogDescription>
             {t('collaboration.invite_people').replace('{title}', noteTitle)}

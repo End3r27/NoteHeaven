@@ -174,15 +174,8 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>{t('collaboration.share_folder').replace('{name}', folderName)}</span>
-            {sharedUsers.length > 0 && (
-              <PresenceAvatars 
-                collaborators={sharedUsers.map(u => ({ user_id: u.user_id, permission: u.permission, accepted: u.accepted }))}
-                type="folder"
-                resourceId={folderId}
-              />
-            )}
+          <DialogTitle>
+            {t('collaboration.share_folder').replace('{name}', folderName)}
           </DialogTitle>
           <DialogDescription>
             {t('collaboration.collaborate_folder')}
