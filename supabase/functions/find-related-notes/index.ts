@@ -42,9 +42,17 @@ serve(async (req) => {
       throw new Error('Note not found');
     }
     
-    if (!currentNote.title || !currentNote.body) {
-      throw new Error('Note is missing title or content');
-    }
+const currentTitle = currentNote.title?.trim() || 'Untitled';
+const currentBody = currentNote.body?.trim() || '';
+
+// If both are effectively empty, return no related notes (but don't crash)
+if (!currentTitle && !currentBody) {
+  console.warn(`Note ${noteId} has no usable content; returning empty related notes`);
+  return new Response(
+    JSON.stringify({ relatedNotes: [] }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
 
     // Get all other notes
     const { data: otherNotes, error } = await supabase
