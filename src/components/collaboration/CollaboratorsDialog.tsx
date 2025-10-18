@@ -211,6 +211,65 @@ const handleInvite = async (userId: string) => {
   }
 };
 
+// Add this inside your CollaboratorsDialog component, near the other handlers
+
+const handleRemove = async (collabId: string) => {
+  try {
+    const { error } = await supabase
+      .from('shared_notes')
+      .delete()
+      .eq('id', collabId);
+
+    if (error) throw error;
+
+    // Optionally: also delete related notifications
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('resource_id', noteId)
+      .eq('user_id', collaborators.find(c => c.id === collabId)?.userId);
+
+    toast({
+      title: 'Collaborator removed',
+      description: 'Access to this note has been revoked.',
+    });
+
+    fetchCollaborators(); // Refresh list
+  } catch (error: any) {
+    console.error('Failed to remove collaborator:', error);
+    toast({
+      title: 'Error removing collaborator',
+      description: error.message || 'Please try again.',
+      variant: 'destructive',
+    });
+  }
+};
+
+const handlePermissionChange = async (collabId: string, newPermission: 'viewer' | 'editor') => {
+  try {
+    const { error } = await supabase
+      .from('shared_notes')
+      .update({ permission: newPermission })
+      .eq('id', collabId);
+
+    if (error) throw error;
+
+    toast({
+      title: 'Permission updated',
+      description: `Now ${newPermission}.`,
+    });
+
+    fetchCollaborators();
+  } catch (error: any) {
+    console.error('Failed to update permission:', error);
+    toast({
+      title: 'Error updating permission',
+      description: error.message || 'Please try again.',
+      variant: 'destructive',
+    });
+  }
+};
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
