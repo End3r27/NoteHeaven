@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: "new_comment" | "comment_reply" | "share_invite" | "share_accept" | "note_fork"
+          title: string
+          content?: string
+          resource_id?: string
+          resource_type?: "note" | "folder"
+          actor_id?: string
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: "new_comment" | "comment_reply" | "share_invite" | "share_accept" | "note_fork"
+          title: string
+          content?: string
+          resource_id?: string
+          resource_type?: "note" | "folder"
+          actor_id?: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: "new_comment" | "comment_reply" | "share_invite" | "share_accept" | "note_fork"
+          title?: string
+          content?: string
+          resource_id?: string
+          resource_type?: "note" | "folder"
+          actor_id?: string
+          is_read?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
       attachments: {
         Row: {
           created_at: string | null
@@ -179,25 +233,43 @@ export type Database = {
       }
       profiles: {
         Row: {
-          created_at: string | null
+          created_at: string
           email: string
           id: string
           updated_at: string | null
           used_storage: number | null
+          bio: string | null
+          favorite_color: string | null
+          is_profile_complete: boolean | null
+          nickname: string | null
+          profile_pic_url: string | null
+          avatar_url: string | null
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           email: string
           id: string
           updated_at?: string | null
           used_storage?: number | null
+          bio?: string | null
+          favorite_color?: string | null
+          is_profile_complete?: boolean | null
+          nickname?: string | null
+          profile_pic_url?: string | null
+          avatar_url?: string | null
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           email?: string
           id?: string
           updated_at?: string | null
           used_storage?: number | null
+          bio?: string | null
+          favorite_color?: string | null
+          is_profile_complete?: boolean | null
+          nickname?: string | null
+          profile_pic_url?: string | null
+          avatar_url?: string | null
         }
         Relationships: []
       }
@@ -208,7 +280,7 @@ export type Database = {
           folder_id: string
           id: string
           invited_by: string
-          permission: string
+          permission: "viewer" | "editor" | "owner"
           user_id: string
         }
         Insert: {
@@ -217,7 +289,7 @@ export type Database = {
           folder_id: string
           id?: string
           invited_by: string
-          permission: string
+          permission: "viewer" | "editor" | "owner"
           user_id: string
         }
         Update: {
@@ -226,7 +298,7 @@ export type Database = {
           folder_id?: string
           id?: string
           invited_by?: string
-          permission?: string
+          permission?: "viewer" | "editor" | "owner"
           user_id?: string
         }
         Relationships: [
@@ -237,6 +309,20 @@ export type Database = {
             referencedRelation: "folders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "shared_folders_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_folders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       shared_notes: {
@@ -246,7 +332,7 @@ export type Database = {
           id: string
           invited_by: string
           note_id: string
-          permission: string
+          permission: "viewer" | "editor"
           user_id: string
         }
         Insert: {
@@ -255,7 +341,7 @@ export type Database = {
           id?: string
           invited_by: string
           note_id: string
-          permission: string
+          permission: "viewer" | "editor"
           user_id: string
         }
         Update: {
@@ -264,7 +350,7 @@ export type Database = {
           id?: string
           invited_by?: string
           note_id?: string
-          permission?: string
+          permission?: "viewer" | "editor"
           user_id?: string
         }
         Relationships: [
@@ -275,6 +361,120 @@ export type Database = {
             referencedRelation: "notes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "shared_notes_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
+      comments: {
+        Row: {
+          id: string
+          note_id: string
+          user_id: string
+          parent_id?: string
+          content: string
+          selection_start?: number
+          selection_end?: number
+          resolved: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          note_id: string
+          user_id: string
+          parent_id?: string
+          content: string
+          selection_start?: number
+          selection_end?: number
+          resolved?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          note_id?: string
+          user_id?: string
+          parent_id?: string
+          content?: string
+          selection_start?: number
+          selection_end?: number
+          resolved?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
+      comment_reactions: {
+        Row: {
+          id: string
+          comment_id: string
+          user_id: string
+          emoji: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          comment_id: string
+          user_id: string
+          emoji: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          comment_id?: string
+          user_id?: string
+          emoji?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       tags: {
@@ -305,49 +505,133 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_profiles: {
+      },
+      notifications: {
         Row: {
-          bio: string | null
-          created_at: string | null
-          favorite_color: string | null
           id: string
-          is_profile_complete: boolean | null
-          nickname: string
-          profile_pic_url: string | null
-          updated_at: string | null
           user_id: string
+          type: "new_comment" | "comment_reply" | "share_invite" | "share_accept" | "note_fork"
+          title: string
+          content?: string
+          resource_id?: string
+          resource_type?: "note" | "folder"
+          actor_id?: string
+          is_read: boolean
+          created_at: string
         }
         Insert: {
-          bio?: string | null
-          created_at?: string | null
-          favorite_color?: string | null
           id?: string
-          is_profile_complete?: boolean | null
-          nickname: string
-          profile_pic_url?: string | null
-          updated_at?: string | null
           user_id: string
+          type: "new_comment" | "comment_reply" | "share_invite" | "share_accept" | "note_fork"
+          title: string
+          content?: string
+          resource_id?: string
+          resource_type?: "note" | "folder"
+          actor_id?: string
+          is_read?: boolean
+          created_at?: string
         }
         Update: {
-          bio?: string | null
-          created_at?: string | null
-          favorite_color?: string | null
           id?: string
-          is_profile_complete?: boolean | null
-          nickname?: string
-          profile_pic_url?: string | null
-          updated_at?: string | null
           user_id?: string
+          type?: "new_comment" | "comment_reply" | "share_invite" | "share_accept" | "note_fork"
+          title?: string
+          content?: string
+          resource_id?: string
+          resource_type?: "note" | "folder"
+          actor_id?: string
+          is_read?: boolean
+          created_at?: string
         }
-        Relationships: []
-      }
-    }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      },
+      activities: {
+          Row: {
+            id: string
+            user_id: string
+            action_type: "edit" | "comment" | "share" | "fork"
+            resource_type: "note" | "folder"
+            resource_id: string
+            metadata?: Record<string, any>
+            created_at: string
+          }
+          Insert: {
+            id?: string
+            user_id: string
+            action_type: "edit" | "comment" | "share" | "fork"
+            resource_type: "note" | "folder"
+            resource_id: string
+            metadata?: Record<string, any>
+            created_at?: string
+          }
+          Update: {
+            id?: string
+            user_id?: string
+            action_type?: "edit" | "comment" | "share" | "fork"
+            resource_type?: "note" | "folder"
+            resource_id?: string
+            metadata?: Record<string, any>
+            created_at?: string
+          }
+          Relationships: [
+            {
+              foreignKeyName: "activities_user_id_fkey"
+              columns: ["user_id"]
+              isOneToOne: false
+              referencedRelation: "profiles"
+              referencedColumns: ["id"]
+            }
+          ]
+        }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      insert_notification: {
+        Args: {
+          p_user_id: string;
+          p_type: "new_comment" | "comment_reply" | "share_invite" | "share_accept" | "note_fork";
+          p_title: string;
+          p_content?: string;
+          p_resource_id?: string;
+          p_resource_type?: "note" | "folder";
+          p_actor_id?: string;
+        };
+        Returns: {
+          id: string;
+        };
+      };
+      mark_notification_as_read: {
+        Args: {
+          p_notification_id: string;
+        };
+        Returns: {
+          success: boolean;
+        };
+      };
+      cleanup_inactive_presence: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
+      handle_new_comment: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
     }
     Enums: {
       [_ in never]: never

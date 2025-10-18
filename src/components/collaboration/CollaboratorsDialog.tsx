@@ -22,7 +22,6 @@ import { Users, Search, Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sendNotification } from '@/lib/notifications';
-import { useLanguage } from '@/components/language/LanguageProvider';
 
 interface Collaborator {
   id: string;
@@ -48,7 +47,6 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedPermission, setSelectedPermission] = useState<'viewer' | 'editor'>('editor');
   const { toast } = useToast();
-  const { t } = useLanguage();
 
   useEffect(() => {
     if (open) {
@@ -99,15 +97,15 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     if (searchQuery.trim().length < 2) return;
 
     const { data, error } = await supabase
-      .from('user_profiles')
-      .select('user_id, nickname, profile_pic_url, favorite_color')
+      .from('profiles')
+      .select('id, nickname, profile_pic_url, favorite_color')
       .ilike('nickname', `%${searchQuery}%`)
       .limit(5);
 
     if (!error && data) {
       // Filter out users already collaborating
       const existingUserIds = new Set(collaborators.map(c => c.userId));
-      setSearchResults(data.filter(u => !existingUserIds.has(u.user_id)));
+      setSearchResults(data.filter(u => !existingUserIds.has(u.id)));
     }
   };
 
@@ -161,9 +159,9 @@ const handleInvite = async (userId: string) => {
 
     // Get sender's profile information
     const { data: profile } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('nickname')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     const senderName = profile?.nickname || 'A user';
@@ -213,54 +211,12 @@ const handleInvite = async (userId: string) => {
   }
 };
 
-  const handlePermissionChange = async (collaboratorId: string, newPermission: 'viewer' | 'editor') => {
-    const { error } = await supabase
-      .from('shared_notes')
-      .update({ permission: newPermission })
-      .eq('id', collaboratorId);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update permission',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Success',
-        description: 'Permission updated',
-      });
-      fetchCollaborators();
-    }
-  };
-
-  const handleRemove = async (collaboratorId: string) => {
-    const { error } = await supabase
-      .from('shared_notes')
-      .delete()
-      .eq('id', collaboratorId);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to remove collaborator',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Success',
-        description: 'Collaborator removed',
-      });
-      fetchCollaborators();
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Users className="h-4 w-4 mr-2" />
-          {t("collab.manage_collaborators")}
+          Collaborators
           {collaborators.length > 0 && (
             <Badge variant="secondary" className="ml-2">
               {collaborators.length}
@@ -270,9 +226,9 @@ const handleInvite = async (userId: string) => {
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("collab.manage_collaborators")}</DialogTitle>
+          <DialogTitle>Manage Collaborators</DialogTitle>
           <DialogDescription>
-            {t("collab.invite_people").replace("{title}", noteTitle)}
+            Invite people to collaborate on "{noteTitle}"
           </DialogDescription>
         </DialogHeader>
 
@@ -281,7 +237,7 @@ const handleInvite = async (userId: string) => {
           <div className="space-y-2">
             <div className="flex gap-2">
               <Input
-                placeholder={t("collab.search_nickname")}
+                placeholder="Search by nickname..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -294,8 +250,8 @@ const handleInvite = async (userId: string) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">{t("collab.viewer")}</SelectItem>
-                  <SelectItem value="editor">{t("collab.editor")}</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleSearch} size="icon">
@@ -322,7 +278,7 @@ const handleInvite = async (userId: string) => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleInvite(user.user_id)}
+                      onClick={() => handleInvite(user.id)}
                     >
                       <UserPlus className="h-4 w-4" />
                     </Button>
@@ -352,7 +308,7 @@ const handleInvite = async (userId: string) => {
                       <div>
                         <p className="text-sm font-medium">{collab.user.nickname}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                           <Select
+                          <Select
                             value={collab.permission}
                             onValueChange={(v) =>
                               handlePermissionChange(collab.id, v as 'viewer' | 'editor')
@@ -362,8 +318,8 @@ const handleInvite = async (userId: string) => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="viewer">{t("collab.viewer")}</SelectItem>
-                              <SelectItem value="editor">{t("collab.editor")}</SelectItem>
+                              <SelectItem value="viewer">Viewer</SelectItem>
+                              <SelectItem value="editor">Editor</SelectItem>
                             </SelectContent>
                           </Select>
                           {!collab.accepted && (

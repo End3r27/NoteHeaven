@@ -32,7 +32,6 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
   const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
   const [selectedPermission, setSelectedPermission] = useState<"viewer" | "editor" | "owner">("editor");
   const { toast } = useToast();
-  const { t } = useLanguage();
 
   const loadSharedUsers = async () => {
     const { data, error } = await supabase
@@ -43,11 +42,11 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
     if (!error && data) {
       const userIds = data.map(d => d.user_id);
       const { data: profiles } = await supabase
-        .from('user_profiles')
-        .select('user_id, nickname, favorite_color')
-        .in('user_id', userIds);
+        .from('profiles')
+        .select('id, nickname, favorite_color')
+        .in('id', userIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
       
       const enrichedData = data.map(share => ({
         ...share,
@@ -62,8 +61,8 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
     if (searchQuery.trim().length < 2) return;
 
     const { data, error } = await supabase
-      .from('user_profiles')
-      .select('user_id, nickname, favorite_color')
+      .from('profiles')
+      .select('id, nickname, favorite_color')
       .ilike('nickname', `%${searchQuery}%`)
       .limit(5);
 
@@ -106,9 +105,9 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
   } else {
     // Create notification directly using Supabase
     const { data: profile } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('nickname')
-      .eq('user_id', currentUser.user.id)
+      .eq('id', currentUser.user.id)
       .single();
 
     const senderName = profile?.nickname || 'A user';
@@ -172,19 +171,19 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("collab.share_folder").replace("{name}", folderName)}</DialogTitle>
+          <DialogTitle>Share Folder: {folderName}</DialogTitle>
           <DialogDescription>
-            {t("collab.collaborate_all_notes")}
+            Collaborate on all notes in this folder
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Share with specific users */}
           <div className="space-y-2">
-            <Label>{t("collab.invite_collaborators")}</Label>
+            <Label>Invite collaborators</Label>
             <div className="flex gap-2">
               <Input
-                placeholder={t("collab.search_nickname")}
+                placeholder="Search by nickname..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -194,13 +193,13 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">{t("collab.viewer")}</SelectItem>
-                  <SelectItem value="editor">{t("collab.editor")}</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
                   <SelectItem value="owner">Owner</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleSearch} size="sm">
-                {t("collab.search")}
+                Search
               </Button>
             </div>
 
@@ -221,10 +220,10 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
                       role="button"
                       tabIndex={0}
                       className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
-                      onClick={() => handleShareWithUser(user.user_id)}
+                      onClick={() => handleShareWithUser(user.id)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
-                          handleShareWithUser(user.user_id);
+                          handleShareWithUser(user.id);
                         }
                       }}
                     >

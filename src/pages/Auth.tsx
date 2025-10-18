@@ -71,15 +71,13 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="absolute top-4 right-4 flex gap-2">
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value as any)}
-          className="px-3 py-2 rounded-md border border-border bg-background text-sm"
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLanguage(language === "en" ? "it" : "en")}
         >
-          <option value="en">🇬🇧 English</option>
-          <option value="it">🇮🇹 Italiano</option>
-          <option value="es">🇪🇸 Español</option>
-        </select>
+          <Languages className="h-4 w-4" />
+        </Button>
         <Button
           variant="ghost"
           size="sm"
