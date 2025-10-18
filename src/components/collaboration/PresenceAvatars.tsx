@@ -13,10 +13,33 @@ interface PresenceAvatarsProps {
   }>;
   type?: "folder" | "note";
   resourceId?: string;
+  size?: "xs" | "sm" | "md" | "lg";
+  maxVisible?: number;
 }
 
-export function PresenceAvatars({ collaborators, type = "note", resourceId }: PresenceAvatarsProps) {
+export function PresenceAvatars({ 
+  collaborators, 
+  type = "note", 
+  resourceId,
+  size = "md",
+  maxVisible = 5
+}: PresenceAvatarsProps) {
   const [profiles, setProfiles] = useState<Array<Profile & { isOnline: boolean; lastSeen: string }>>([]);
+
+  // Size configurations
+  const sizeClasses = {
+    xs: "h-5 w-5",
+    sm: "h-6 w-6", 
+    md: "h-8 w-8",
+    lg: "h-10 w-10"
+  };
+
+  const statusDotSizes = {
+    xs: "h-1.5 w-1.5",
+    sm: "h-2 w-2",
+    md: "h-3 w-3", 
+    lg: "h-4 w-4"
+  };
 
   useEffect(() => {
     fetchCollaboratorProfiles();
@@ -106,10 +129,14 @@ export function PresenceAvatars({ collaborators, type = "note", resourceId }: Pr
     setProfiles(profilesWithStatus);
   };
 
+  // Apply maxVisible limit
+  const visibleProfiles = profiles.slice(0, maxVisible);
+  const remainingCount = profiles.length - maxVisible;
+
   return (
-    <div className="flex -space-x-2">
+    <div className="flex -space-x-1">
       <AnimatePresence>
-        {profiles.map((profile) => (
+        {visibleProfiles.map((profile) => (
           <motion.div
             key={profile.id}
             initial={{ scale: 0, x: -20 }}
@@ -126,9 +153,9 @@ export function PresenceAvatars({ collaborators, type = "note", resourceId }: Pr
                 <TooltipTrigger asChild>
                   <div className="relative inline-block">
                     <Avatar 
-                      className={`h-8 w-8 border-2 transition-all duration-300 ${
+                      className={`${sizeClasses[size]} border-2 transition-all duration-300 ${
                         profile.isOnline 
-                          ? 'ring-2 ring-green-400 ring-offset-2 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse' 
+                          ? 'ring-1 ring-green-400 ring-offset-1 shadow-[0_0_4px_rgba(34,197,94,0.5)] animate-pulse' 
                           : 'border-background'
                       }`}
                       style={{
@@ -154,7 +181,7 @@ export function PresenceAvatars({ collaborators, type = "note", resourceId }: Pr
                     
                     {/* Online status indicator */}
                     <span 
-                      className={`absolute -right-0.5 -top-0.5 block h-3 w-3 rounded-full border-2 border-background ${
+                      className={`absolute -right-0.5 -top-0.5 block ${statusDotSizes[size]} rounded-full border-2 border-background ${
                         profile.isOnline 
                           ? 'bg-green-500 animate-pulse' 
                           : 'bg-gray-400'
@@ -189,6 +216,25 @@ export function PresenceAvatars({ collaborators, type = "note", resourceId }: Pr
             </TooltipProvider>
           </motion.div>
         ))}
+        
+        {/* Show remaining count if there are more users */}
+        {remainingCount > 0 && (
+          <motion.div
+            initial={{ scale: 0, x: -20 }}
+            animate={{ scale: 1, x: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 30,
+            }}
+          >
+            <div 
+              className={`${sizeClasses[size]} border-2 border-muted-foreground bg-muted rounded-full flex items-center justify-center text-xs font-medium text-muted-foreground`}
+            >
+              +{remainingCount}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

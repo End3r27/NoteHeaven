@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language/LanguageProvider";
 import { ShareFolderDialog } from "./ShareFolderDialog";
+import { PresenceAvatars } from "@/components/collaboration/PresenceAvatars";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,12 @@ import {
 interface Folder {
   id: string;
   name: string;
+}
+
+interface SharedUser {
+  user_id: string;
+  permission: string;
+  accepted: boolean;
 }
 
 interface Tag {
@@ -68,6 +75,7 @@ export function NotesSidebar({
   const [usedStorage, setUsedStorage] = useState<number>(0);
   const [newFolderName, setNewFolderName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [sharedFolderUsers, setSharedFolderUsers] = useState<Record<string, SharedUser[]>>({});
   const navigate = useNavigate();
   const { t } = useLanguage();
   const MAX_STORAGE = 2.5 * 1024 * 1024 * 1024; // 2.5GB in bytes
@@ -89,10 +97,42 @@ const fetchStorage = async () => {
   }
 };
 
+const fetchSharedFolderUsers = async () => {
+  if (folders.length === 0) return;
+  
+  const folderIds = folders.map(f => f.id);
+  const { data, error } = await supabase
+    .from('shared_folders')
+    .select('folder_id, user_id, permission, accepted')
+    .in('folder_id', folderIds)
+    .eq('accepted', true);
+
+  if (!error && data) {
+    const grouped = data.reduce((acc, item) => {
+      if (!acc[item.folder_id]) {
+        acc[item.folder_id] = [];
+      }
+      acc[item.folder_id].push({
+        user_id: item.user_id,
+        permission: item.permission,
+        accepted: item.accepted
+      });
+      return acc;
+    }, {} as Record<string, SharedUser[]>);
+    
+    setSharedFolderUsers(grouped);
+  }
+};
+
   // Fetch storage on mount
   useEffect(() => {
     fetchStorage();
   }, []);
+
+  // Fetch shared folder users when folders change
+  useEffect(() => {
+    fetchSharedFolderUsers();
+  }, [folders]);
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
@@ -172,6 +212,16 @@ const fetchStorage = async () => {
                   >
                     <Folder className="h-4 w-4" />
                     <span>{folder.name}</span>
+                    {sharedFolderUsers[folder.id] && sharedFolderUsers[folder.id].length > 0 && (
+                      <div className="ml-2">
+                        <PresenceAvatars 
+                          collaborators={sharedFolderUsers[folder.id]}
+                          type="folder"
+                          resourceId={folder.id}
+                          size="sm"
+                        />
+                      </div>
+                    )}
                     <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100">
                       <ShareFolderDialog folderId={folder.id} folderName={folder.name} />
                       <Button asChild className="h-6 w-6 p-0">

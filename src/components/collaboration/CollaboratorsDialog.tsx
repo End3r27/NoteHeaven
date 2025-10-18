@@ -276,13 +276,17 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Users className="h-4 w-4 mr-2" />
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
           {t('collaboration.manage_collaborators')}
           {collaborators.length > 0 && (
-            <Badge variant="secondary" className="ml-2">
-              {collaborators.length}
-            </Badge>
+            <PresenceAvatars 
+              collaborators={collaborators.map(c => ({ user_id: c.userId, permission: c.permission, accepted: c.accepted }))}
+              type="note"
+              resourceId={noteId}
+              size="xs"
+              maxVisible={3}
+            />
           )}
         </Button>
       </DialogTrigger>

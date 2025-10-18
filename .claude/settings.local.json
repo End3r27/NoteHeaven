@@ -4,7 +4,9 @@
       "Bash(npm run:*)",
       "Bash(npx supabase:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npx vite:*)",
+      "Bash(npm install)"
     ],
     "deny": []
   }
