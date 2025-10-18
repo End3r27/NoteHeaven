@@ -18,7 +18,7 @@ import type { Profile, ProfileStats } from "@/types/profile";
 
 export default function Profile() {
   const { id } = useParams<{ id: string }>();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, refreshKey } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -301,15 +301,23 @@ export default function Profile() {
         console.log('Auth profile refreshed');
       }
 
-      // Force image cache refresh by updating all img elements
+      // Force image refresh across all components
       setTimeout(() => {
-        const images = document.querySelectorAll('img[src*="supabase"]');
+        // Update all avatar images with the new URL
+        const images = document.querySelectorAll('img');
         images.forEach((img: any) => {
-          const src = img.src;
-          if (src.includes(publicUrl.split('?')[0])) {
+          if (img.src && (img.src.includes(user.id) || img.src.includes('profile-pics'))) {
+            console.log('Updating image src from', img.src, 'to', cacheBustUrl);
             img.src = cacheBustUrl;
+            // Force reload by toggling src
+            const originalSrc = img.src;
+            img.src = '';
+            setTimeout(() => img.src = originalSrc, 10);
           }
         });
+
+        // Force React state refresh by triggering window resize
+        window.dispatchEvent(new Event('resize'));
       }, 500);
       
       toast({
@@ -377,7 +385,7 @@ export default function Profile() {
             <div className="flex items-start gap-6">
               <div className="relative">
                 <div className="relative">
-                  <Avatar className="h-24 w-24 border-4" style={{ borderColor: profile.favorite_color || "#3b82f6" }}>
+                  <Avatar key={`profile-avatar-${refreshKey}`} className="h-24 w-24 border-4" style={{ borderColor: profile.favorite_color || "#3b82f6" }}>
                     <AvatarImage src={profile.profile_pic_url || undefined} alt={profile.nickname || ""} />
                     <AvatarFallback style={{ backgroundColor: profile.favorite_color || "#3b82f6", color: "#ffffff" }}>
                       {profile.nickname?.[0]?.toUpperCase() || profile.email?.[0]?.toUpperCase() || "U"}

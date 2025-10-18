@@ -5,6 +5,7 @@ import type { Profile } from "@/types/shared";
 export function useAuth() {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const refreshProfile = async () => {
     if (!user) return;
@@ -25,6 +26,7 @@ export function useAuth() {
     if (profile) {
       console.log('Profile refreshed:', profile.profile_pic_url);
       setUser(profile);
+      setRefreshKey(prev => prev + 1); // Force component re-renders
     }
   };
 
@@ -90,5 +92,6 @@ export function useAuth() {
     loading,
     isAuthenticated: !!user,
     refreshProfile,
+    refreshKey, // Expose refresh key for forcing re-renders
   };
 }

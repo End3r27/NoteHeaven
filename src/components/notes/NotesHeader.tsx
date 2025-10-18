@@ -32,7 +32,7 @@ export function NotesHeader({
 }: NotesHeaderProps) {
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
-  const { user } = useAuth();
+  const { user, refreshKey } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -86,7 +86,7 @@ export function NotesHeader({
         className="gap-2"
       >
         {user ? (
-          <Avatar className="h-6 w-6">
+          <Avatar key={`avatar-${refreshKey}`} className="h-6 w-6">
             <AvatarImage src={user.profile_pic_url || undefined} alt={user.nickname || ""} />
             <AvatarFallback 
               style={{ 
