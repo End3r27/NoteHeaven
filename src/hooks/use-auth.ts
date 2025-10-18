@@ -9,13 +9,21 @@ export function useAuth() {
   const refreshProfile = async () => {
     if (!user) return;
     
-    const { data: profile } = await supabase
+    console.log('Refreshing profile for user:', user.id);
+    
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
     
+    if (error) {
+      console.error('Error refreshing profile:', error);
+      return;
+    }
+    
     if (profile) {
+      console.log('Profile refreshed:', profile.profile_pic_url);
       setUser(profile);
     }
   };
@@ -71,34 +79,11 @@ export function useAuth() {
 
     fetchUser();
 
-    // Set up real-time subscription to profile changes
-    let profileSubscription: any = null;
-    if (user) {
-      profileSubscription = supabase
-        .channel(`profile:${user.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "profiles",
-            filter: `id=eq.${user.id}`,
-          },
-          () => {
-            refreshProfile();
-          }
-        )
-        .subscribe();
-    }
-
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      if (profileSubscription) {
-        profileSubscription.unsubscribe();
-      }
     };
-  }, [user?.id]);
+  }, []);
 
   return {
     user,

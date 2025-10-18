@@ -254,22 +254,42 @@ export default function Profile() {
       // Add cache-busting parameter to ensure fresh image loads
       const cacheBustUrl = `${publicUrl}?v=${Date.now()}`;
 
+      console.log('Updating profile picture URL:', cacheBustUrl);
+
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ profile_pic_url: cacheBustUrl })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        throw updateError;
+      }
+
+      console.log('Database updated successfully');
 
       setProfile(prev => prev ? { ...prev, profile_pic_url: cacheBustUrl } : null);
       
       // Also refresh the profile data to ensure consistency
       await fetchProfile();
+      console.log('Local profile refreshed');
       
       // Refresh the auth profile data to update header and other components
       if (refreshProfile) {
         await refreshProfile();
+        console.log('Auth profile refreshed');
       }
+
+      // Force image cache refresh by updating all img elements
+      setTimeout(() => {
+        const images = document.querySelectorAll('img[src*="supabase"]');
+        images.forEach((img: any) => {
+          const src = img.src;
+          if (src.includes(publicUrl.split('?')[0])) {
+            img.src = cacheBustUrl;
+          }
+        });
+      }, 500);
       
       toast({
         title: "Profile picture updated",
