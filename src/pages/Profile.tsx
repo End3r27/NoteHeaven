@@ -244,7 +244,7 @@ export default function Profile() {
       console.log('Uploading file:', fileName, 'Size:', file.size, 'Type:', file.type);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('attachments')
+        .from('avatars')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true
@@ -258,14 +258,14 @@ export default function Profile() {
       console.log('Upload successful:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
-        .from('attachments')
+        .from('avatars')
         .getPublicUrl(filePath);
 
       console.log('Generated public URL:', publicUrl);
 
       // Verify the file actually exists
       const { data: fileExists, error: checkError } = await supabase.storage
-        .from('attachments')
+        .from('avatars')
         .list('profile-pics', {
           search: fileName
         });
