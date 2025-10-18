@@ -3,6 +3,7 @@ import type { Profile } from "@/types/profile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
+import { Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PresenceAvatarsProps {
@@ -24,7 +25,7 @@ export function PresenceAvatars({
   size = "md",
   maxVisible = 5
 }: PresenceAvatarsProps) {
-  const [profiles, setProfiles] = useState<Array<Profile & { isOnline: boolean; lastSeen: string }>>([]);
+  const [profiles, setProfiles] = useState<Array<Profile & { isOnline: boolean; lastSeen: string; permission?: string }>>([]);
 
   // Size configurations
   const sizeClasses = {
@@ -86,6 +87,10 @@ export function PresenceAvatars({
         let isOnline = false;
         let lastSeen = profile.last_seen_at || profile.created_at || "";
 
+        // Get permission for this user from collaborators array
+        const collaborator = collaborators.find(c => c.user_id === profile.id);
+        const permission = collaborator?.permission;
+
         // Check if user has active presence
         if (resourceId) {
           const { data: presenceData } = await supabase
@@ -114,6 +119,7 @@ export function PresenceAvatars({
           ...profile,
           isOnline,
           lastSeen,
+          permission,
         };
       })
     );
@@ -179,6 +185,19 @@ export function PresenceAvatars({
                       </AvatarFallback>
                     </Avatar>
                     
+                    {/* Crown icon for owners */}
+                    {profile.permission === 'owner' && (
+                      <div className="absolute -top-1 -left-1">
+                        <Crown 
+                          className={`${
+                            size === 'xs' ? 'h-3 w-3' : 
+                            size === 'sm' ? 'h-3.5 w-3.5' : 
+                            size === 'lg' ? 'h-5 w-5' : 'h-4 w-4'
+                          } text-yellow-500 fill-yellow-400 drop-shadow-sm`} 
+                        />
+                      </div>
+                    )}
+
                     {/* Online status indicator */}
                     <span 
                       className={`absolute -right-0.5 -top-0.5 block ${statusDotSizes[size]} rounded-full border-2 border-background ${
@@ -193,6 +212,9 @@ export function PresenceAvatars({
                   <div className="text-sm">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{profile.nickname || "Anonymous"}</p>
+                      {profile.permission === 'owner' && (
+                        <Crown className="h-3 w-3 text-yellow-500 fill-yellow-400" />
+                      )}
                       <span 
                         className={`h-2 w-2 rounded-full ${
                           profile.isOnline ? 'bg-green-500' : 'bg-gray-400'
@@ -202,6 +224,11 @@ export function PresenceAvatars({
                     {profile.bio && (
                       <p className="mt-1 text-xs text-muted-foreground">
                         {profile.bio}
+                      </p>
+                    )}
+                    {profile.permission && (
+                      <p className="mt-1 text-xs text-muted-foreground capitalize">
+                        {profile.permission}
                       </p>
                     )}
                     <p className="mt-1 text-xs text-muted-foreground">

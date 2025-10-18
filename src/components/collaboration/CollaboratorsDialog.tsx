@@ -58,42 +58,72 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
   }, [open, noteId]);
 
   const fetchCollaborators = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get the note to find the owner
+    const { data: noteData } = await supabase
+      .from('notes')
+      .select('user_id')
+      .eq('id', noteId)
+      .single();
+
+    // Get shared users
     const { data, error } = await supabase
       .from('shared_notes')
       .select('*')
       .eq('note_id', noteId);
 
+    const resolved: any[] = [];
+
+    // Add note owner first
+    if (noteData?.user_id) {
+      resolved.push({
+        id: 'owner',
+        userId: noteData.user_id,
+        permission: 'owner',
+        accepted: true,
+      });
+    }
+
+    // Add shared users
     if (!error && data) {
       const rows = data as any[];
-      const resolved = rows.map((c) => ({
-        id: c.id,
-        userId: c.user_id || c.shared_with,
-        permission: c.permission || c.role || 'viewer',
-        accepted: Boolean(c.accepted),
-      }));
-
-      const userIds = resolved.map((r) => r.userId).filter(Boolean);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, nickname, profile_pic_url, favorite_color')
-        .in('id', userIds);
-
-      const pMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-
-      setCollaborators(
-        resolved.map((r) => ({
-          id: r.id,
-          userId: r.userId,
-          permission: r.permission,
-          accepted: r.accepted,
-          user: {
-            nickname: pMap.get(r.userId)?.nickname || 'Unknown',
-            avatarUrl: pMap.get(r.userId)?.profile_pic_url,
-            favoriteColor: pMap.get(r.userId)?.favorite_color || '#3b82f6',
-          },
-        }))
-      );
+      rows.forEach((c) => {
+        const userId = c.user_id || c.shared_with;
+        // Only add if not already the owner
+        if (userId && userId !== noteData?.user_id) {
+          resolved.push({
+            id: c.id,
+            userId: userId,
+            permission: c.permission || c.role || 'viewer',
+            accepted: Boolean(c.accepted),
+          });
+        }
+      });
     }
+
+    const userIds = resolved.map((r) => r.userId).filter(Boolean);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, nickname, profile_pic_url, favorite_color')
+      .in('id', userIds);
+
+    const pMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    setCollaborators(
+      resolved.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        permission: r.permission,
+        accepted: r.accepted,
+        user: {
+          nickname: pMap.get(r.userId)?.nickname || 'Unknown',
+          avatarUrl: pMap.get(r.userId)?.profile_pic_url,
+          favoriteColor: pMap.get(r.userId)?.favorite_color || '#3b82f6',
+        },
+      }))
+    );
   };
 
   const handleSearch = async () => {

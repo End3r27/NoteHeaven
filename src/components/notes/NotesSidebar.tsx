@@ -100,6 +100,9 @@ const fetchStorage = async () => {
 const fetchSharedFolderUsers = async () => {
   if (folders.length === 0) return;
   
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  
   const folderIds = folders.map(f => f.id);
   const { data, error } = await supabase
     .from('shared_folders')
@@ -107,21 +110,35 @@ const fetchSharedFolderUsers = async () => {
     .in('folder_id', folderIds)
     .eq('accepted', true);
 
+  const grouped: Record<string, SharedUser[]> = {};
+  
+  // Add folder owners first
+  folders.forEach(folder => {
+    grouped[folder.id] = [{
+      user_id: user.id, // Current user is the owner
+      permission: 'owner',
+      accepted: true
+    }];
+  });
+
+  // Add shared users
   if (!error && data) {
-    const grouped = data.reduce((acc, item) => {
-      if (!acc[item.folder_id]) {
-        acc[item.folder_id] = [];
+    data.forEach(item => {
+      if (!grouped[item.folder_id]) {
+        grouped[item.folder_id] = [];
       }
-      acc[item.folder_id].push({
-        user_id: item.user_id,
-        permission: item.permission,
-        accepted: item.accepted
-      });
-      return acc;
-    }, {} as Record<string, SharedUser[]>);
-    
-    setSharedFolderUsers(grouped);
+      // Only add if not already the owner
+      if (item.user_id !== user.id) {
+        grouped[item.folder_id].push({
+          user_id: item.user_id,
+          permission: item.permission,
+          accepted: item.accepted
+        });
+      }
+    });
   }
+  
+  setSharedFolderUsers(grouped);
 };
 
   // Fetch storage on mount
@@ -212,7 +229,7 @@ const fetchSharedFolderUsers = async () => {
                   >
                     <Folder className="h-4 w-4" />
                     <span>{folder.name}</span>
-                    {sharedFolderUsers[folder.id] && sharedFolderUsers[folder.id].length > 0 && (
+                    {sharedFolderUsers[folder.id] && (
                       <div className="ml-2">
                         <PresenceAvatars 
                           collaborators={sharedFolderUsers[folder.id]}
