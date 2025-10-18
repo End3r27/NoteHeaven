@@ -177,7 +177,7 @@ const handleInvite = async (userId: string) => {
         sender_id: user.id,
         type: 'share_invite',
         title: 'Note invitation',
-        message: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
+        content: `${senderName} invited you to collaborate on the note: "${noteTitle}"`,
         resource_id: noteId,
         resource_type: 'note',
         is_read: false
