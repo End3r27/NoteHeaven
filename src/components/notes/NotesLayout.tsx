@@ -89,6 +89,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
     const { data, error } = await supabase
       .from("notes")
       .select("*")
+      .eq("user_id", user.id)
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -106,6 +107,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
     const { data, error } = await supabase
       .from("folders")
       .select("*")
+      .eq("user_id", user.id)
       .order("name");
 
     if (error) {
@@ -127,6 +129,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
         *,
         note_tags!inner(note_id)
       `)
+      .eq("user_id", user.id)
       .order("name");
 
     if (error) {
@@ -179,7 +182,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
       const { data: attachments } = await supabase.from('attachments').select('file_url').eq('note_id', noteId);
       
       // Then, delete the note itself (attachments in DB will be cascade-deleted)
-      const { error } = await supabase.from("notes").delete().eq("id", noteId);
+      const { error } = await supabase.from("notes").delete().eq("id", noteId).eq("user_id", user.id);
       if (error) throw error;
 
       // Now, delete files from storage
@@ -210,6 +213,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
       .from("notes")
       .update(updates)
       .eq("id", noteId)
+      .eq("user_id", user.id)
       .select()
       .single();
 
@@ -250,7 +254,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
   };
 
   const deleteFolder = async (folderId: string) => {
-    const { error } = await supabase.from("folders").delete().eq("id", folderId);
+    const { error } = await supabase.from("folders").delete().eq("id", folderId).eq("user_id", user.id);
 
     if (error) {
       toast({
@@ -381,7 +385,7 @@ export function NotesLayout({ user }: { user: { id: string } }) {
           totalStorage={2 * 1024 * 1024 * 1024}
           onMoveNoteToFolder={async (noteId, folderId) => {
             try {
-              const { error } = await supabaseClient.from('notes').update({ folder_id: folderId }).eq('id', noteId);
+              const { error } = await supabaseClient.from('notes').update({ folder_id: folderId }).eq('id', noteId).eq('user_id', user.id);
               if (error) throw error;
               setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, folder_id: folderId } : n));
               if (selectedNote?.id === noteId) {

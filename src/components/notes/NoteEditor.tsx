@@ -336,6 +336,18 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
       const { error: storageError } = await supabase.storage.from('attachments').remove([filePath]);
       if (storageError) throw storageError;
 
+      // Verify the attachment belongs to a note owned by the current user
+      const { data: attachmentCheck } = await supabase
+        .from('attachments')
+        .select('notes!inner(user_id)')
+        .eq('id', attachmentId)
+        .eq('notes.user_id', note.user_id)
+        .single();
+      
+      if (!attachmentCheck) {
+        throw new Error('Unauthorized: Attachment not found or access denied');
+      }
+
       const { error: dbError } = await supabase.from('attachments').delete().eq('id', attachmentId);
       if (dbError) throw dbError;
 

@@ -41,6 +41,10 @@ export default function GraphView() {
   const fetchGraphData = async () => {
     setIsLoading(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       // Fetch notes with tags and folders
       const { data: notes, error: notesError } = await supabase
         .from("notes")
@@ -54,6 +58,7 @@ export default function GraphView() {
             )
           )
         `)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (notesError) throw notesError;
@@ -61,7 +66,8 @@ export default function GraphView() {
       // Fetch folders
       const { data: folders, error: foldersError } = await supabase
         .from("folders")
-        .select("id, name");
+        .select("id, name")
+        .eq("user_id", user.id);
 
       if (foldersError) throw foldersError;
 
