@@ -18,7 +18,7 @@ import type { Profile, ProfileStats } from "@/types/profile";
 
 export default function Profile() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -251,14 +251,25 @@ export default function Profile() {
         .from('attachments')
         .getPublicUrl(filePath);
 
+      // Add cache-busting parameter to ensure fresh image loads
+      const cacheBustUrl = `${publicUrl}?v=${Date.now()}`;
+
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ profile_pic_url: publicUrl })
+        .update({ profile_pic_url: cacheBustUrl })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
-      setProfile(prev => prev ? { ...prev, profile_pic_url: publicUrl } : null);
+      setProfile(prev => prev ? { ...prev, profile_pic_url: cacheBustUrl } : null);
+      
+      // Also refresh the profile data to ensure consistency
+      await fetchProfile();
+      
+      // Refresh the auth profile data to update header and other components
+      if (refreshProfile) {
+        await refreshProfile();
+      }
       
       toast({
         title: "Profile picture updated",

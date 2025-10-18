@@ -6,6 +6,20 @@ export function useAuth() {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+    
+    if (profile) {
+      setUser(profile);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -57,15 +71,39 @@ export function useAuth() {
 
     fetchUser();
 
+    // Set up real-time subscription to profile changes
+    let profileSubscription: any = null;
+    if (user) {
+      profileSubscription = supabase
+        .channel(`profile:${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+            filter: `id=eq.${user.id}`,
+          },
+          () => {
+            refreshProfile();
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      if (profileSubscription) {
+        profileSubscription.unsubscribe();
+      }
     };
-  }, []);
+  }, [user?.id]);
 
   return {
     user,
     loading,
     isAuthenticated: !!user,
+    refreshProfile,
   };
 }
