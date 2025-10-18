@@ -241,20 +241,41 @@ export default function Profile() {
       const fileName = `${user.id}-${Math.random()}.${fileExt}`;
       const filePath = `profile-pics/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('attachments')
-        .upload(filePath, file);
+      console.log('Uploading file:', fileName, 'Size:', file.size, 'Type:', file.type);
 
-      if (uploadError) throw uploadError;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('attachments')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from('attachments')
         .getPublicUrl(filePath);
 
+      console.log('Generated public URL:', publicUrl);
+
+      // Verify the file actually exists
+      const { data: fileExists, error: checkError } = await supabase.storage
+        .from('attachments')
+        .list('profile-pics', {
+          search: fileName
+        });
+
+      console.log('File exists check:', fileExists, checkError);
+
       // Add cache-busting parameter to ensure fresh image loads
       const cacheBustUrl = `${publicUrl}?v=${Date.now()}`;
 
-      console.log('Updating profile picture URL:', cacheBustUrl);
+      console.log('Final URL with cache busting:', cacheBustUrl);
 
       const { error: updateError } = await supabase
         .from('profiles')
