@@ -81,19 +81,55 @@ export function NotesLayout({ user }: { user: { id: string } }) {
   };
 
   const fetchFolders = async () => {
-    const { data, error } = await supabase
+    // Fetch folders owned by user
+    const { data: ownedFolders, error: ownedError } = await supabase
       .from("folders")
       .select("*")
+      .eq("user_id", user.id)
       .order("name");
 
-    if (error) {
+    // Fetch folders shared with user
+    const { data: sharedFolders, error: sharedError } = await supabase
+      .from("shared_folders")
+      .select("folder_id, folders(*)")
+      .eq("user_id", user.id)
+      .eq("accepted", true);
+
+    if (ownedError || sharedError) {
       toast({
         title: "Error",
         description: "Failed to load folders",
         variant: "destructive",
       });
     } else {
-      setFolders(data || []);
+      // Combine owned and shared folders
+      const sharedFolderData = (sharedFolders || [])
+        .map((sf: any) => sf.folders)
+        .filter(Boolean);
+      const allFolders = [...(ownedFolders || []), ...sharedFolderData];
+      setFolders(allFolders);
+      
+      // Set up realtime subscription for shared folder updates
+      const channel = supabase
+        .channel('shared_folders_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'shared_folders',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            // Refetch folders when sharing changes
+            fetchFolders();
+          }
+        )
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   };
 

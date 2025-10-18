@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-type Language = "en" | "it";
+type Language = "en" | "it" | "es";
 
 interface LanguageContextType {
   language: Language;
@@ -122,6 +122,17 @@ const translations = {
     // Related Notes
     "related.title": "Related Notes",
     "related.description": "AI-suggested notes with similar content",
+    
+    // Collaboration
+    "collab.share_folder": "Share Folder: {name}",
+    "collab.collaborate_all_notes": "Collaborate on all notes in this folder",
+    "collab.invite_collaborators": "Invite collaborators",
+    "collab.search_nickname": "Search by nickname...",
+    "collab.editor": "Editor",
+    "collab.viewer": "Viewer",
+    "collab.search": "Search",
+    "collab.manage_collaborators": "Manage Collaborators",
+    "collab.invite_people": "Invite people to collaborate on \"{title}\"",
   },
   it: {
     // Auth page
@@ -235,6 +246,142 @@ const translations = {
     // Related Notes
     "related.title": "Note correlate",
     "related.description": "Note suggerite dall'AI con contenuto simile",
+    
+    // Collaboration
+    "collab.share_folder": "Condividi cartella: {name}",
+    "collab.collaborate_all_notes": "Collabora su tutte le note in questa cartella",
+    "collab.invite_collaborators": "Invita collaboratori",
+    "collab.search_nickname": "Cerca per nickname...",
+    "collab.editor": "Editor",
+    "collab.viewer": "Visualizzatore",
+    "collab.search": "Cerca",
+    "collab.manage_collaborators": "Gestisci collaboratori",
+    "collab.invite_people": "Invita persone a collaborare su \"{title}\"",
+  },
+  es: {
+    // Auth page
+    "auth.welcome_back": "Bienvenido de vuelta",
+    "auth.create_account": "Crear una cuenta",
+    "auth.enter_credentials": "Ingresa tus credenciales para acceder a tus notas",
+    "auth.start_organizing": "Comienza a organizar tus pensamientos con NoteHaven",
+    "auth.email": "Correo electrónico",
+    "auth.password": "Contraseña",
+    "auth.sign_in": "Iniciar sesión",
+    "auth.sign_up": "Registrarse",
+    "auth.loading": "Cargando...",
+    "auth.no_account": "¿No tienes una cuenta? Regístrate",
+    "auth.have_account": "¿Ya tienes una cuenta? Inicia sesión",
+    "auth.welcome_toast": "¡Bienvenido de vuelta!",
+    "auth.logged_in": "Has iniciado sesión exitosamente.",
+    "auth.account_created": "¡Cuenta creada!",
+    "auth.signed_up": "Te has registrado exitosamente. ¡Bienvenido a NoteHaven!",
+    "auth.error": "Error",
+    
+    // Notes Header
+    "notes.search": "Buscar notas...",
+    "notes.semantic_search": "Búsqueda semántica (ej. 'notas sobre ideas de proyectos')...",
+    "notes.ai_search": "Búsqueda IA",
+    "notes.ai_insights": "Perspectivas IA",
+    "notes.daily_recap": "Resumen Diario",
+    "notes.new_note": "Nueva Nota",
+    "notes.graph": "Gráfico",
+    "notes.select_or_create": "Selecciona una nota o crea una nueva",
+    
+    // Editor
+    "editor.start_writing": "Comienza a escribir...",
+    "editor.attachments": "Adjuntos",
+    "editor.upload_file": "Subir archivo",
+    "editor.uploading": "Subiendo...",
+    "editor.save": "Guardar",
+    "editor.saved": "Guardado",
+    "editor.recap": "Resumen",
+    "editor.generating": "Generando...",
+    "editor.suggest_tags": "Sugerir etiquetas",
+    "editor.suggesting": "Sugiriendo...",
+    "editor.save_tags": "Guardar etiquetas",
+    "editor.tags": "Etiquetas",
+    "editor.add_tag": "Agregar etiqueta",
+    "editor.add_tag_placeholder": "Nombre de nueva etiqueta",
+    "editor.remove_tag": "Eliminar",
+    "editor.delete": "Eliminar",
+    "editor.last_edited": "Última edición:",
+    
+    // Sidebar
+    "sidebar.folders": "Carpetas",
+    "sidebar.create_new_folder": "Crear nueva carpeta",
+    "sidebar.folder_name_placeholder": "Nombre de carpeta",
+    "sidebar.create_folder": "Crear carpeta",
+    "sidebar.all_notes": "Todas las notas",
+    "sidebar.tags": "Etiquetas",
+    "sidebar.sign_out": "Cerrar sesión",
+
+    // Graph page
+    "graph.back_to_notes": "Volver a notas",
+    "graph.title": "Gráfico de notas",
+    "graph.legend.notes": "Notas",
+    "graph.legend.folders": "Carpetas",
+    "graph.legend.tags": "Etiquetas",
+    "graph.legend.related": "Relacionadas",
+    "graph.empty": "No hay notas para mostrar. Crea algunas notas para ver el gráfico.",
+    "graph.error_loading": "Error al cargar el gráfico",
+    "graph.tags": "Etiquetas",
+
+    // AI Insights
+    "insights.title": "Perspectivas IA",
+    "insights.tab.recent": "Actividad reciente",
+    "insights.tab.folder": "Por carpeta",
+    "insights.tab.tag": "Por etiqueta",
+    "insights.recent.title": "Resumen de actividad reciente",
+    "insights.recent.desc": "Obtén un resumen generado por IA de tus notas y actividad reciente",
+    "insights.generating": "Generando...",
+    "insights.generate_recap": "Generar resumen",
+    "insights.folder.title": "Resumen de carpeta",
+    "insights.folder.desc": "Resume todas las notas dentro de una carpeta específica",
+    "insights.folder.select_placeholder": "Selecciona una carpeta",
+    "insights.generate_summary": "Generar resumen",
+    "insights.tag.title": "Resumen de etiqueta",
+    "insights.tag.desc": "Resume todas las notas con una etiqueta específica",
+    "insights.tag.select_placeholder": "Selecciona una etiqueta",
+    "insights.toast.summary_generated.title": "Resumen generado",
+    "insights.toast.summary_generated.desc": "Se analizaron {count} notas",
+    "insights.toast.error.title": "Error",
+    "insights.toast.error.desc": "No se pudo generar el resumen. Inténtalo de nuevo.",
+    "insights.summary.header": "Resumen",
+    "insights.summary.analyzed_one": "{count} nota analizada",
+    "insights.summary.analyzed_many": "{count} notas analizadas",
+    "insights.empty.recent": "No se encontraron notas para actividad reciente. ¡Crea algunas notas para comenzar!",
+    "insights.empty.folder": "No se encontraron notas en la carpeta \"{name}\". ¡Crea algunas notas para comenzar!",
+    "insights.empty.tag": "No se encontraron notas con la etiqueta \"{name}\". ¡Crea algunas notas para comenzar!",
+    
+    // Daily Recap
+    "daily.back_to_notes": "Volver a notas",
+    "daily.title": "Resumen diario",
+    "daily.subtitle": "Un resumen de tus notas de las últimas 24 horas",
+    "daily.generating": "Generando tu resumen diario...",
+    "daily.ai_summary": "Resumen IA",
+    "daily.analyzed_one": "{count} nota analizada",
+    "daily.analyzed_many": "{count} notas analizadas",
+    "daily.todays_notes": "Notas de hoy",
+    "daily.todays_notes_desc": "Todas las notas creadas o actualizadas en las últimas 24 horas",
+    "daily.no_content": "Sin contenido",
+    "daily.updated": "Actualizado:",
+    "daily.error.title": "Error",
+    "daily.error.desc": "No se pudo generar el resumen diario",
+    
+    // Related Notes
+    "related.title": "Notas relacionadas",
+    "related.description": "Notas sugeridas por IA con contenido similar",
+    
+    // Collaboration
+    "collab.share_folder": "Compartir carpeta: {name}",
+    "collab.collaborate_all_notes": "Colabora en todas las notas de esta carpeta",
+    "collab.invite_collaborators": "Invitar colaboradores",
+    "collab.search_nickname": "Buscar por apodo...",
+    "collab.editor": "Editor",
+    "collab.viewer": "Visualizador",
+    "collab.search": "Buscar",
+    "collab.manage_collaborators": "Administrar colaboradores",
+    "collab.invite_people": "Invitar a personas a colaborar en \"{title}\"",
   },
 };
 
