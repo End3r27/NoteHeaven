@@ -37,27 +37,59 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
   const { t } = useLanguage();
 
   const loadSharedUsers = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get the folder to find the owner
+    const { data: folderData } = await supabase
+      .from('folders')
+      .select('user_id')
+      .eq('id', folderId)
+      .single();
+
+    // Get shared users
     const { data, error } = await supabase
       .from('shared_folders')
       .select('id, user_id, permission, accepted')
       .eq('folder_id', folderId);
 
-    if (!error && data) {
-      const userIds = data.map(d => d.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, nickname, favorite_color')
-        .in('id', userIds);
+    const allUsers: any[] = [];
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-      
-      const enrichedData = data.map(share => ({
-        ...share,
-        profiles: profileMap.get(share.user_id) || { nickname: 'Unknown', favorite_color: '#gray' }
-      }));
-
-      setSharedUsers(enrichedData as SharedUser[]);
+    // Add folder owner first
+    if (folderData?.user_id) {
+      allUsers.push({
+        id: 'owner',
+        user_id: folderData.user_id,
+        permission: 'owner',
+        accepted: true,
+      });
     }
+
+    // Add shared users
+    if (!error && data) {
+      data.forEach(share => {
+        // Only add if not already the owner
+        if (share.user_id !== folderData?.user_id) {
+          allUsers.push(share);
+        }
+      });
+    }
+
+    // Get all user profiles
+    const userIds = allUsers.map(d => d.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, nickname, favorite_color')
+      .in('id', userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    
+    const enrichedData = allUsers.map(share => ({
+      ...share,
+      profiles: profileMap.get(share.user_id) || { nickname: 'Unknown', favorite_color: '#gray' }
+    }));
+
+    setSharedUsers(enrichedData as SharedUser[]);
   };
 
   const handleSearch = async () => {

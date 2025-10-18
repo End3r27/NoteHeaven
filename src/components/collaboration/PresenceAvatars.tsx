@@ -70,6 +70,15 @@ export function PresenceAvatars({
   const fetchCollaboratorProfiles = async () => {
     if (!collaborators.length) return;
 
+    // Update current user's presence first
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser) {
+      await supabase
+        .from('profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', currentUser.id);
+    }
+
     const userIds = collaborators.map(c => c.user_id);
     
     // Fetch profiles
@@ -91,28 +100,14 @@ export function PresenceAvatars({
         const collaborator = collaborators.find(c => c.user_id === profile.id);
         const permission = collaborator?.permission;
 
-        // Check if user has active presence
-        if (resourceId) {
-          const { data: presenceData } = await supabase
-            .from("user_presence")
-            .select("last_seen, is_active")
-            .eq("user_id", profile.id)
-            .eq(type === "note" ? "note_id" : "folder_id", resourceId)
-            .maybeSingle();
-
-          if (presenceData) {
-            lastSeen = presenceData.last_seen || lastSeen;
-            const lastSeenTime = new Date(lastSeen);
-            const diffMinutes = (now.getTime() - lastSeenTime.getTime()) / (1000 * 60);
-            isOnline = presenceData.is_active && diffMinutes < 5; // Online if active and seen within 5 minutes
-          }
+        // Simplify online detection to use profile.last_seen_at primarily
+        if (lastSeen) {
+          const lastSeenTime = new Date(lastSeen);
+          const diffMinutes = (now.getTime() - lastSeenTime.getTime()) / (1000 * 60);
+          isOnline = diffMinutes < 2; // Online if seen within 2 minutes (PresenceProvider updates every 30s)
+          console.log(`${profile.nickname} online check: lastSeen=${lastSeen}, diffMinutes=${diffMinutes.toFixed(1)}, isOnline=${isOnline}`);
         } else {
-          // Fall back to profile last_seen_at
-          if (lastSeen) {
-            const lastSeenTime = new Date(lastSeen);
-            const diffMinutes = (now.getTime() - lastSeenTime.getTime()) / (1000 * 60);
-            isOnline = diffMinutes < 5;
-          }
+          console.log(`${profile.nickname} has no lastSeen data`);
         }
 
         return {

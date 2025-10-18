@@ -406,20 +406,26 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                       <div>
                         <p className="text-sm font-medium">{collab.user.nickname}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <Select
-                            value={collab.permission}
-                            onValueChange={(v) =>
-                              handlePermissionChange(collab.id, v as 'viewer' | 'editor')
-                            }
-                          >
-                            <SelectTrigger className="h-6 text-xs w-24">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="viewer">{t('collaboration.viewer')}</SelectItem>
-                              <SelectItem value="editor">{t('collaboration.editor')}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {collab.permission === 'owner' ? (
+                            <Badge variant="default" className="text-xs">
+                              Owner
+                            </Badge>
+                          ) : (
+                            <Select
+                              value={collab.permission}
+                              onValueChange={(v) =>
+                                handlePermissionChange(collab.id, v as 'viewer' | 'editor')
+                              }
+                            >
+                              <SelectTrigger className="h-6 text-xs w-24">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="viewer">{t('collaboration.viewer')}</SelectItem>
+                                <SelectItem value="editor">{t('collaboration.editor')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
                           {!collab.accepted && (
                             <Badge variant="outline" className="text-xs">
                               Pending
@@ -428,13 +434,15 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                         </div>
                       </div>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleRemove(collab.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {collab.permission !== 'owner' && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleRemove(collab.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
