@@ -105,9 +105,6 @@ export function PresenceAvatars({
           const lastSeenTime = new Date(lastSeen);
           const diffMinutes = (now.getTime() - lastSeenTime.getTime()) / (1000 * 60);
           isOnline = diffMinutes < 2; // Online if seen within 2 minutes (PresenceProvider updates every 30s)
-          console.log(`${profile.nickname} online check: lastSeen=${lastSeen}, diffMinutes=${diffMinutes.toFixed(1)}, isOnline=${isOnline}`);
-        } else {
-          console.log(`${profile.nickname} has no lastSeen data`);
         }
 
         return {
@@ -135,8 +132,17 @@ export function PresenceAvatars({
   const remainingCount = profiles.length - maxVisible;
 
   return (
-    <div className="flex -space-x-1">
-      <AnimatePresence>
+    <>
+      {/* Custom CSS for slow pulse animation */}
+      <style>{`
+        @keyframes slowPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+      `}</style>
+      
+      <div className="flex -space-x-1">
+        <AnimatePresence>
         {visibleProfiles.map((profile) => (
           <motion.div
             key={profile.id}
@@ -156,7 +162,7 @@ export function PresenceAvatars({
                     <Avatar 
                       className={`${sizeClasses[size]} border-2 transition-all duration-300 ${
                         profile.isOnline 
-                          ? 'ring-1 ring-green-400 ring-offset-1 shadow-[0_0_4px_rgba(34,197,94,0.5)] animate-pulse' 
+                          ? 'ring-1 ring-green-400 ring-offset-1 shadow-[0_0_4px_rgba(34,197,94,0.5)]' 
                           : 'border-background'
                       }`}
                       style={{
@@ -164,6 +170,7 @@ export function PresenceAvatars({
                         filter: profile.isOnline 
                           ? `drop-shadow(0 0 6px ${profile.favorite_color || "#3b82f6"})`
                           : "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
+                        animation: profile.isOnline ? 'slowPulse 3s ease-in-out infinite' : 'none'
                       }}
                     >
                       <AvatarImage
@@ -197,9 +204,12 @@ export function PresenceAvatars({
                     <span 
                       className={`absolute -right-0.5 -top-0.5 block ${statusDotSizes[size]} rounded-full border-2 border-background ${
                         profile.isOnline 
-                          ? 'bg-green-500 animate-pulse' 
+                          ? 'bg-green-500' 
                           : 'bg-gray-400'
-                      }`} 
+                      }`}
+                      style={{
+                        animation: profile.isOnline ? 'slowPulse 2s ease-in-out infinite' : 'none'
+                      }}
                     />
                   </div>
                 </TooltipTrigger>
@@ -257,7 +267,8 @@ export function PresenceAvatars({
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
-    </div>
+        </AnimatePresence>
+      </div>
+    </>
   );
 }
