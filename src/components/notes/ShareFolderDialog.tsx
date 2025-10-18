@@ -8,6 +8,8 @@ import { Users, User, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language/LanguageProvider";
+import { PresenceAvatars } from "@/components/collaboration/PresenceAvatars";
 
 interface ShareFolderDialogProps {
   folderId: string;
@@ -32,6 +34,7 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
   const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
   const [selectedPermission, setSelectedPermission] = useState<"viewer" | "editor" | "owner">("editor");
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const loadSharedUsers = async () => {
     const { data, error } = await supabase
@@ -171,19 +174,28 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Share Folder: {folderName}</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>{t('collaboration.share_folder').replace('{name}', folderName)}</span>
+            {sharedUsers.length > 0 && (
+              <PresenceAvatars 
+                collaborators={sharedUsers.map(u => ({ user_id: u.user_id, permission: u.permission, accepted: u.accepted }))}
+                type="folder"
+                resourceId={folderId}
+              />
+            )}
+          </DialogTitle>
           <DialogDescription>
-            Collaborate on all notes in this folder
+            {t('collaboration.collaborate_folder')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Share with specific users */}
           <div className="space-y-2">
-            <Label>Invite collaborators</Label>
+            <Label>{t('collaboration.invite_collaborators')}</Label>
             <div className="flex gap-2">
               <Input
-                placeholder="Search by nickname..."
+                placeholder={t('collaboration.search_nickname')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -193,13 +205,13 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
-                  <SelectItem value="owner">Owner</SelectItem>
+                  <SelectItem value="viewer">{t('collaboration.viewer')}</SelectItem>
+                  <SelectItem value="editor">{t('collaboration.editor')}</SelectItem>
+                  <SelectItem value="owner">{t('collaboration.owner')}</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleSearch} size="sm">
-                Search
+                {t('collaboration.search')}
               </Button>
             </div>
 

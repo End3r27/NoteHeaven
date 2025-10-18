@@ -61,31 +61,39 @@ export const RemoteCursors = ({ containerRef }: RemoteCursorsProps) => {
       {Object.entries(cursors).map(([userId, cursor]) => (
         <div
           key={userId}
-          className="pointer-events-none fixed z-50 transition-all duration-100"
+          className="pointer-events-none fixed z-50 transition-all duration-150"
           style={{
             left: cursor.position.x,
             top: cursor.position.y,
+            transform: 'translate(-2px, -2px)', // Center the cursor better
           }}
         >
+          {/* Enhanced cursor SVG */}
           <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            viewBox="0 0 24 36"
             fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+            className="drop-shadow-md"
           >
             <path
-              d="M5.65376 12.3673L11.6315 5.95605L13.0444 14.8034L17.1666 17.4089L15.7537 18.6272L11.6315 16.0217L5.65376 12.3673Z"
+              d="M5.65376 12.3271H5.46026L5.31717 12.4456L0.500002 16.4835V0.500002L23.1901 12.3271H5.65376Z"
               fill={cursor.color}
               stroke="white"
-              strokeWidth="1.5"
+              strokeWidth="1"
             />
           </svg>
+          
+          {/* Nickname tag with improved styling */}
           <div
-            className="mt-1 px-2 py-1 rounded text-xs font-medium text-white whitespace-nowrap shadow-lg"
-            style={{ backgroundColor: cursor.color }}
+            className="ml-4 mt-1 px-2 py-1 rounded-md text-xs font-medium text-white whitespace-nowrap shadow-lg animate-pulse"
+            style={{ 
+              backgroundColor: cursor.color,
+              transform: 'translateY(-100%)',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+            }}
           >
-            {cursor.nickname}
+            {cursor.nickname || 'Anonymous'}
           </div>
         </div>
       ))}

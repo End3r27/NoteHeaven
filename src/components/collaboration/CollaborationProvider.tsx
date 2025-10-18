@@ -51,7 +51,8 @@ export function CollaborationProvider({ children }: { children: ReactNode }) {
       .upsert({
         user_id: user.id,
         note_id: noteId,
-        cursor_position: position,
+        cursor_x: position.x,
+        cursor_y: position.y,
         is_active: true,
         last_seen: new Date().toISOString(),
       })
@@ -69,7 +70,8 @@ export function CollaborationProvider({ children }: { children: ReactNode }) {
         .upsert({
           user_id: user.id,
           note_id: noteId,
-          selection_range: range,
+          selection_start: range.start,
+          selection_end: range.end,
           is_active: true,
           last_seen: new Date().toISOString(),
         })
@@ -133,9 +135,19 @@ export function CollaborationProvider({ children }: { children: ReactNode }) {
           table: "user_presence",
           filter: `note_id=eq.${noteId}`,
         },
-        (payload) => {
-          const presence = payload.new as UserPresence;
+        async (payload) => {
+          const presence = payload.new as any;
           const { user_id } = presence;
+
+          // Skip updates from current user
+          if (user_id === user?.id) return;
+
+          // Fetch user profile for nickname and color
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("nickname, favorite_color")
+            .eq("id", user_id)
+            .single();
 
           setState((prev) => {
             const newState = { ...prev };
@@ -147,19 +159,38 @@ export function CollaborationProvider({ children }: { children: ReactNode }) {
               delete newState.selections[user_id];
             } else {
               const userIndex = prev.activeUsers.findIndex((u) => u.user_id === user_id);
+              const enhancedPresence = {
+                ...presence,
+                user: profile || { nickname: "Anonymous", favorite_color: "#3b82f6" }
+              };
+
               if (userIndex === -1) {
-                newState.activeUsers = [...prev.activeUsers, presence];
+                newState.activeUsers = [...prev.activeUsers, enhancedPresence];
               } else {
                 newState.activeUsers = [...prev.activeUsers];
-                newState.activeUsers[userIndex] = presence;
+                newState.activeUsers[userIndex] = enhancedPresence;
               }
 
-              if (presence.cursor_position) {
+              // Update cursor position
+              if (presence.cursor_x !== null && presence.cursor_y !== null) {
                 newState.cursors = {
                   ...prev.cursors,
                   [user_id]: {
                     userId: user_id,
-                    position: presence.cursor_position,
+                    position: { x: presence.cursor_x, y: presence.cursor_y },
+                    nickname: profile?.nickname || "Anonymous",
+                    color: profile?.favorite_color || "#3b82f6",
+                  },
+                };
+              }
+
+              // Update selection
+              if (presence.selection_start !== null && presence.selection_end !== null) {
+                newState.selections = {
+                  ...prev.selections,
+                  [user_id]: {
+                    userId: user_id,
+                    range: { start: presence.selection_start, end: presence.selection_end },
                   },
                 };
               }
@@ -169,15 +200,15 @@ export function CollaborationProvider({ children }: { children: ReactNode }) {
           });
 
           // Show toast for user joining/leaving
-          if (payload.eventType === "INSERT" && presence.user) {
+          if (payload.eventType === "INSERT" && profile) {
             toast({
               title: "User joined",
-              description: `${presence.user.nickname || "Someone"} joined the note`,
+              description: `${profile.nickname || "Someone"} joined the note`,
             });
-          } else if (payload.eventType === "DELETE" && presence.user) {
+          } else if (payload.eventType === "DELETE" && profile) {
             toast({
               title: "User left",
-              description: `${presence.user.nickname || "Someone"} left the note`,
+              description: `${profile.nickname || "Someone"} left the note`,
             });
           }
         }

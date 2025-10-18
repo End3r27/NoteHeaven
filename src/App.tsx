@@ -12,8 +12,10 @@ import DailyRecap from "./pages/DailyRecap";
 import GraphView from "./pages/GraphView";
 import ProfileSetup from "./pages/ProfileSetup";
 import SharedNote from "./pages/SharedNote";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { CollaborationProvider } from '@/components/collaboration/CollaborationProvider';
+import { PresenceProvider } from '@/components/collaboration/PresenceProvider';
 
 const queryClient = new QueryClient();
 
@@ -21,23 +23,26 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <LanguageProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <HashRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/notes" element={<Notes />} />
-              <Route path="/daily" element={<DailyRecap />} />
-              <Route path="/graph" element={<GraphView />} />
-              <Route path="/profile-setup" element={<ProfileSetup />} />
-              <Route path="/shared/:uuid" element={<SharedNote />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </HashRouter>
-        </TooltipProvider>
+        <PresenceProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <HashRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/notes" element={<Notes />} />
+                <Route path="/daily" element={<DailyRecap />} />
+                <Route path="/graph" element={<GraphView />} />
+                <Route path="/profile-setup" element={<ProfileSetup />} />
+                <Route path="/profile/:id" element={<Profile />} />
+                <Route path="/shared/:uuid" element={<SharedNote />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </HashRouter>
+          </TooltipProvider>
+        </PresenceProvider>
       </LanguageProvider>
     </ThemeProvider>
   </QueryClientProvider>

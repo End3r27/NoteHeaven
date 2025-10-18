@@ -75,6 +75,8 @@ export interface Activity {
 export interface CursorUpdate {
   userId: string;
   position: { x: number; y: number };
+  nickname: string;
+  color: string;
 }
 
 export interface SelectionUpdate {

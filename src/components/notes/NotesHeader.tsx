@@ -1,13 +1,18 @@
-import { Search, Plus, Moon, Sun, Sparkles, Calendar, Brain, Languages, Network } from "lucide-react";
+import { Search, Plus, Moon, Sun, Sparkles, Calendar, Brain, Languages, Network, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { useLanguage } from "@/components/language/LanguageProvider";
 import { NotificationsMenu } from "@/components/collaboration";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Profile } from "@/types/profile";
 
 interface NotesHeaderProps {
   searchQuery: string;
@@ -30,7 +35,29 @@ export function NotesHeader({
 }: NotesHeaderProps) {
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (!error && data) {
+      setProfile(data);
+    }
+  };
 
   return (
     <header className="border-b border-border h-14 flex items-center px-4 gap-4">
@@ -76,6 +103,29 @@ export function NotesHeader({
         {t("notes.new_note")}
       </Button>
       <NotificationsMenu />
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => user && navigate(`/profile/${user.id}`)}
+        className="gap-2"
+      >
+        {profile ? (
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={profile.profile_pic_url || undefined} alt={profile.nickname || ""} />
+            <AvatarFallback 
+              style={{ 
+                backgroundColor: profile.favorite_color || "#3b82f6", 
+                color: "#ffffff",
+                fontSize: "10px"
+              }}
+            >
+              {profile.nickname?.[0]?.toUpperCase() || profile.email?.[0]?.toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <User className="h-4 w-4" />
+        )}
+      </Button>
       <Button
         variant="ghost"
         size="sm"

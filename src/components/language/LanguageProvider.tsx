@@ -122,6 +122,18 @@ const translations = {
     // Related Notes
     "related.title": "Related Notes",
     "related.description": "AI-suggested notes with similar content",
+    
+    // Collaboration
+    "collaboration.share_folder": "Share Folder: {name}",
+    "collaboration.collaborate_folder": "Collaborate on all notes in this folder",
+    "collaboration.invite_collaborators": "Invite collaborators",
+    "collaboration.search_nickname": "Search by nickname...",
+    "collaboration.editor": "Editor",
+    "collaboration.viewer": "Viewer", 
+    "collaboration.owner": "Owner",
+    "collaboration.search": "Search",
+    "collaboration.manage_collaborators": "Manage Collaborators",
+    "collaboration.invite_people": "Invite people to collaborate on \"{title}\"",
   },
   it: {
     // Auth page
@@ -235,6 +247,18 @@ const translations = {
     // Related Notes
     "related.title": "Note correlate",
     "related.description": "Note suggerite dall'AI con contenuto simile",
+    
+    // Collaboration
+    "collaboration.share_folder": "Condividi cartella: {name}",
+    "collaboration.collaborate_folder": "Collabora su tutte le note in questa cartella",
+    "collaboration.invite_collaborators": "Invita collaboratori",
+    "collaboration.search_nickname": "Cerca per nickname...",
+    "collaboration.editor": "Editor",
+    "collaboration.viewer": "Visualizzatore",
+    "collaboration.owner": "Proprietario",
+    "collaboration.search": "Cerca",
+    "collaboration.manage_collaborators": "Gestisci collaboratori",
+    "collaboration.invite_people": "Invita persone a collaborare su \"{title}\"",
   },
 };
 

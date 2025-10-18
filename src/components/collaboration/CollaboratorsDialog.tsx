@@ -22,6 +22,8 @@ import { Users, Search, Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sendNotification } from '@/lib/notifications';
+import { useLanguage } from '@/components/language/LanguageProvider';
+import { PresenceAvatars } from './PresenceAvatars';
 
 interface Collaborator {
   id: string;
@@ -47,6 +49,7 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedPermission, setSelectedPermission] = useState<'viewer' | 'editor'>('editor');
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (open) {
@@ -275,7 +278,7 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Users className="h-4 w-4 mr-2" />
-          Collaborators
+          {t('collaboration.manage_collaborators')}
           {collaborators.length > 0 && (
             <Badge variant="secondary" className="ml-2">
               {collaborators.length}
@@ -285,9 +288,18 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Manage Collaborators</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>{t('collaboration.manage_collaborators')}</span>
+            {collaborators.length > 0 && (
+              <PresenceAvatars 
+                collaborators={collaborators.map(c => ({ user_id: c.userId, permission: c.permission, accepted: c.accepted }))}
+                type="note"
+                resourceId={noteId}
+              />
+            )}
+          </DialogTitle>
           <DialogDescription>
-            Invite people to collaborate on "{noteTitle}"
+            {t('collaboration.invite_people').replace('{title}', noteTitle)}
           </DialogDescription>
         </DialogHeader>
 
@@ -296,7 +308,7 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
           <div className="space-y-2">
             <div className="flex gap-2">
               <Input
-                placeholder="Search by nickname..."
+                placeholder={t('collaboration.search_nickname')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -309,8 +321,8 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">Viewer</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
+                  <SelectItem value="viewer">{t('collaboration.viewer')}</SelectItem>
+                  <SelectItem value="editor">{t('collaboration.editor')}</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={handleSearch} size="icon">
@@ -377,8 +389,8 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="viewer">Viewer</SelectItem>
-                              <SelectItem value="editor">Editor</SelectItem>
+                              <SelectItem value="viewer">{t('collaboration.viewer')}</SelectItem>
+                              <SelectItem value="editor">{t('collaboration.editor')}</SelectItem>
                             </SelectContent>
                           </Select>
                           {!collab.accepted && (

@@ -5,12 +5,10 @@ import { cn } from "@/lib/utils";
 
 interface RemoteCursorProps {
   cursor: CursorUpdate;
-  nickname: string;
-  color: string;
 }
 
-const RemoteCursor = memo(({ cursor, nickname, color }: RemoteCursorProps) => {
-  const { position } = cursor;
+const RemoteCursor = memo(({ cursor }: RemoteCursorProps) => {
+  const { position, nickname, color } = cursor;
 
   return (
     <motion.div

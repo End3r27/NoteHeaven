@@ -55,7 +55,29 @@ export function NotesLayout({ user }: { user: { id: string } }) {
     fetchFolders();
     fetchTags();
     fetchNotes();
-  }, []);
+
+    // Subscribe to real-time updates for shared folders
+    const sharedFoldersSubscription = supabase
+      .channel('shared_folders_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shared_folders',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Refetch folders when collaboration status changes
+          fetchFolders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      sharedFoldersSubscription.unsubscribe();
+    };
+  }, [user.id]);
 
   const fetchProfile = async () => {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
