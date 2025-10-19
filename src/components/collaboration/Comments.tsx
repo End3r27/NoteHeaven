@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Comment, CommentReaction, Profile } from "@/types/shared";
@@ -39,6 +40,7 @@ const EMOJI_OPTIONS = ["👍", "❤️", "🔥", "🎉"];
 export function Comments({ noteId }: CommentsProps) {
   const { toast } = useToast();
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<CommentWithUser[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -279,19 +281,24 @@ export function Comments({ noteId }: CommentsProps) {
         {comments.map((comment) => (
           <div key={comment.id} className="space-y-2">
             <div className="flex items-start gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={comment.user.profile_pic_url || undefined}
-                  alt={comment.user.nickname || ""}
-                />
-                <AvatarFallback
-                  style={{
-                    backgroundColor: comment.user.favorite_color || undefined,
-                  }}
-                >
-                  {comment.user.nickname?.[0]?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
+              <div 
+                className="cursor-pointer transition-transform hover:scale-105"
+                onClick={() => navigate(`/profile/${comment.user_id}`)}
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={comment.user.profile_pic_url || undefined}
+                    alt={comment.user.nickname || ""}
+                  />
+                  <AvatarFallback
+                    style={{
+                      backgroundColor: comment.user.favorite_color || undefined,
+                    }}
+                  >
+                    {comment.user.nickname?.[0]?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

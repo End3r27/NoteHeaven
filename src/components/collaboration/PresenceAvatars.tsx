@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Profile } from "@/types/profile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -27,6 +28,7 @@ export function PresenceAvatars({
   maxVisible = 5
 }: PresenceAvatarsProps) {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<Array<Profile & { isOnline: boolean; lastSeen: string; permission?: string }>>([]);
 
   // Size configurations
@@ -160,9 +162,12 @@ export function PresenceAvatars({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="relative inline-block">
+                  <div 
+                    className="relative inline-block cursor-pointer" 
+                    onClick={() => navigate(`/profile/${profile.id}`)}
+                  >
                     <Avatar 
-                      className={`${sizeClasses[size]} border-2 transition-all duration-300 ${
+                      className={`${sizeClasses[size]} border-2 transition-all duration-300 hover:scale-105 ${
                         profile.isOnline 
                           ? 'ring-1 ring-green-400 ring-offset-1 shadow-[0_0_4px_rgba(34,197,94,0.5)]' 
                           : 'border-background'
