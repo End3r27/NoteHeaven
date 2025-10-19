@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/components/language/LanguageProvider";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,14 +14,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Edit, Users, UserPlus, UserMinus, Camera, Heart, MessageCircle } from "lucide-react";
+import { ArrowLeft, Edit, Users, UserPlus, UserMinus, Camera, Heart, MessageCircle, Moon, Sun, Languages } from "lucide-react";
 import type { Profile, ProfileStats } from "@/types/profile";
 
 export default function Profile() {
   const { id } = useParams<{ id: string }>();
   const { user, refreshProfile, refreshKey } = useAuth();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -372,11 +374,34 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border h-14 flex items-center px-4 gap-4">
+      <header className="border-b border-border h-14 flex items-center justify-between px-4">
         <Button variant="ghost" size="sm" onClick={() => navigate("/notes")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           {t("daily.back_to_notes")}
         </Button>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLanguage(language === "en" ? "it" : "en")}
+            className="h-8 w-8 p-0"
+          >
+            <Languages className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="h-8 w-8 p-0"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </header>
 
       <div className="max-w-4xl mx-auto p-6">

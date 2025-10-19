@@ -1,13 +1,43 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FolderOpen, Tag, Search } from "lucide-react";
+import { BookOpen, FolderOpen, Tag, Search, Moon, Sun, Languages } from "lucide-react";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="max-w-4xl mx-auto text-center px-4 py-12">
+    <div className="min-h-screen bg-background">
+      {/* Header with toggles */}
+      <div className="absolute top-4 right-4 flex gap-2 z-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLanguage(language === "en" ? "it" : "en")}
+          className="h-10 w-10 p-0"
+        >
+          <Languages className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="h-10 w-10 p-0"
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+      
+      {/* Main content */}
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="max-w-4xl mx-auto text-center px-4 py-12">
         <div className="mb-8 flex justify-center">
           <div className="p-4 bg-primary/10 rounded-2xl">
             <BookOpen className="h-16 w-16 text-primary" />

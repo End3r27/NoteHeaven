@@ -6,7 +6,8 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(npx vite:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

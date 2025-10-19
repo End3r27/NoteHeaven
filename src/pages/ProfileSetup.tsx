@@ -12,14 +12,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Upload, Sparkles, Palette, User as UserIcon, FileText, Check, ArrowRight } from "lucide-react";
+import { Camera, Upload, Sparkles, Palette, User as UserIcon, FileText, Check, ArrowRight, Moon, Sun, Languages } from "lucide-react";
 import { useLanguage } from "@/components/language/LanguageProvider";
+import { useTheme } from "@/components/theme/ThemeProvider";
 
 const PRESET_COLORS = [
   "#3b82f6", "#ef4444", "#10b981", "#f59e0b", 
-  "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16",
-  "#f97316", "#06b6d4", "#8b5cf6", "#10b981",
-  "#f59e0b", "#ef4444", "#6366f1", "#059669"
+  "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"
 ];
 
 const PERSONALITY_TAGS = [
@@ -33,7 +32,8 @@ const ProfileSetup = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [nickname, setNickname] = useState("");
   const [bio, setBio] = useState("");
@@ -59,7 +59,7 @@ const ProfileSetup = () => {
       // Load profile to prefill fields and redirect if already complete
       const { data: profile } = await supabase
         .from('profiles')
-        .select('nickname, bio, favorite_color, is_profile_complete, profile_pic_url, personality_tags')
+        .select('nickname, bio, favorite_color, is_profile_complete, profile_pic_url')
         .eq('id', session.user.id)
         .single();
 
@@ -73,7 +73,6 @@ const ProfileSetup = () => {
         setBio(profile.bio ?? "");
         if (profile.favorite_color) setFavoriteColor(profile.favorite_color);
         if (profile.profile_pic_url) setProfilePicture(profile.profile_pic_url);
-        if (profile.personality_tags) setSelectedTags(profile.personality_tags);
       }
 
       setInitialLoading(false);
@@ -185,7 +184,6 @@ const ProfileSetup = () => {
           bio: bio || null,
           favorite_color: favoriteColor,
           profile_pic_url: profilePicture,
-          personality_tags: selectedTags.length > 0 ? selectedTags : null,
           is_profile_complete: true
         })
         .eq('id', user.id);
@@ -475,12 +473,49 @@ const ProfileSetup = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg"
-      >
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header */}
+      <header className="border-b border-border/40 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
+        <div className="flex items-center justify-between h-14 px-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-primary" />
+            <span className="font-semibold text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              NoteHaven
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLanguage(language === "en" ? "it" : "en")}
+              className="h-8 w-8 p-0"
+            >
+              <Languages className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="h-8 w-8 p-0"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex items-center justify-center min-h-[calc(100vh-3.5rem)] p-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-lg"
+        >
         <Card className="backdrop-blur-sm bg-background/95 border-0 shadow-2xl">
           <CardHeader className="text-center pb-6">
             <motion.div
@@ -567,7 +602,8 @@ const ProfileSetup = () => {
         >
           {t("profile_setup.footer_text")}
         </motion.p>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 };
