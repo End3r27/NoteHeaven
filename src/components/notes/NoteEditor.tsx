@@ -57,6 +57,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
   const [isPublic, setIsPublic] = useState(false);
   const [publicUuid, setPublicUuid] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,6 +98,15 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
     const changed = title !== note.title || body !== note.body;
     setHasChanges(changed);
   }, [title, body, note]);
+
+  // Get current user to check ownership
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
 
   const handleSave = () => {
     onUpdate(note.id, { title, body });
@@ -445,12 +455,14 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
           </Button>
           <PresenceAvatars />
           <CollaboratorsDialog noteId={note.id} noteTitle={title} />
-          <ShareNoteDialog 
-            noteId={note.id}
-            isPublic={isPublic}
-            publicUuid={publicUuid}
-            onTogglePublic={handleTogglePublic}
-          />
+          {currentUserId === note.user_id && (
+            <ShareNoteDialog 
+              noteId={note.id}
+              isPublic={isPublic}
+              publicUuid={publicUuid}
+              onTogglePublic={handleTogglePublic}
+            />
+          )}
           <ExportDialog 
             noteTitle={title}
             noteBody={body}
