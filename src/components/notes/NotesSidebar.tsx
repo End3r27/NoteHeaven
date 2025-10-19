@@ -282,7 +282,7 @@ const fetchSharedFolderUsers = async () => {
         {/* Storage Usage Bar */}
         <div className="mb-3">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs text-muted-foreground">Storage Used</span>
+            <span className="text-xs text-muted-foreground">{t("storage.used")}</span>
             <span className="text-xs font-medium">
               {((usedStorage / (1024 * 1024 * 1024)).toFixed(2))}GB / 2.50GB
             </span>

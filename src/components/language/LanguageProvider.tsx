@@ -134,6 +134,33 @@ const translations = {
     "collaboration.search": "Search",
     "collaboration.manage_collaborators": "Manage Collaborators",
     "collaboration.invite_people": "Invite people to collaborate on \"{title}\"",
+    
+    // Comments
+    "comments.loading": "Loading comments...",
+    "comments.write_placeholder": "Write a comment...",
+    "comments.comment_button": "Comment",
+    "comments.login_required": "You must be logged in to comment",
+    "comments.add_error": "Failed to add comment",
+    "comments.react_login_required": "You must be logged in to react",
+    "comments.reaction_error": "Failed to update reaction",
+    
+    // Share and Export
+    "notes.share": "Share",
+    "notes.export": "Export",
+    
+    // Storage
+    "storage.used": "Storage Used",
+    
+    // Notifications
+    "notifications.title": "Notifications",
+    "notifications.no_notifications": "No notifications",
+    "notifications.mark_read": "Mark as read",
+    "notifications.accept": "Accept",
+    "notifications.decline": "Decline",
+    
+    // Presence Status
+    "presence.online_now": "Online now",
+    "presence.last_seen": "Last seen {time}",
   },
   it: {
     // Auth page
@@ -259,6 +286,33 @@ const translations = {
     "collaboration.search": "Cerca",
     "collaboration.manage_collaborators": "Gestisci collaboratori",
     "collaboration.invite_people": "Invita persone a collaborare su \"{title}\"",
+    
+    // Comments
+    "comments.loading": "Caricamento commenti...",
+    "comments.write_placeholder": "Scrivi un commento...",
+    "comments.comment_button": "Commenta",
+    "comments.login_required": "Devi essere connesso per commentare",
+    "comments.add_error": "Impossibile aggiungere il commento",
+    "comments.react_login_required": "Devi essere connesso per reagire",
+    "comments.reaction_error": "Impossibile aggiornare la reazione",
+    
+    // Share and Export
+    "notes.share": "Condividi",
+    "notes.export": "Esporta",
+    
+    // Storage
+    "storage.used": "Spazio utilizzato",
+    
+    // Notifications
+    "notifications.title": "Notifiche",
+    "notifications.no_notifications": "Nessuna notifica",
+    "notifications.mark_read": "Segna come letta",
+    "notifications.accept": "Accetta",
+    "notifications.decline": "Rifiuta",
+    
+    // Presence Status
+    "presence.online_now": "Online ora",
+    "presence.last_seen": "Visto l'ultima volta {time}",
   },
 };
 

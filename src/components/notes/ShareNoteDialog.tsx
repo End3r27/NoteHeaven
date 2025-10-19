@@ -9,6 +9,7 @@ import { Share2, Copy, Check, User, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface ShareNoteDialogProps {
   noteId: string;
@@ -36,6 +37,7 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
   const [selectedPermission, setSelectedPermission] = useState<"viewer" | "editor">("viewer");
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const loadSharedUsers = async () => {
     const { data, error } = await supabase
@@ -156,7 +158,7 @@ export function ShareNoteDialog({ noteId, isPublic, publicUuid, onTogglePublic }
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Share2 className="h-4 w-4 mr-2" />
-          Share
+          {t("notes.share")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">

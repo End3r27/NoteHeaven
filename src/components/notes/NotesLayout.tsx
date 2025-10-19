@@ -276,6 +276,55 @@ export function NotesLayout({ user }: { user: { id: string } }) {
     }
   };
 
+  // Function to inherit collaborators from a shared folder
+  const inheritFolderCollaborators = async (noteId: string, folderId: string) => {
+    try {
+      // Get all collaborators from the shared folder
+      const { data: folderCollaborators, error: fetchError } = await supabase
+        .from('shared_folders')
+        .select('user_id, permission, accepted')
+        .eq('folder_id', folderId)
+        .eq('accepted', true); // Only inherit from accepted collaborators
+
+      if (fetchError) {
+        console.error('Error fetching folder collaborators:', fetchError);
+        return;
+      }
+
+      if (!folderCollaborators || folderCollaborators.length === 0) {
+        return; // No collaborators to inherit
+      }
+
+      // Add each collaborator to the note
+      for (const collaborator of folderCollaborators) {
+        // Skip if the collaborator is the current user (note owner)
+        if (collaborator.user_id === user.id) continue;
+
+        // Insert the collaborator into shared_notes
+        const { error: insertError } = await supabase
+          .from('shared_notes')
+          .upsert({
+            note_id: noteId,
+            user_id: collaborator.user_id,
+            permission: collaborator.permission,
+            accepted: true, // Auto-accept since they already accepted folder sharing
+            invited_by: user.id
+          }, {
+            onConflict: 'note_id,user_id',
+            ignoreDuplicates: false
+          });
+
+        if (insertError) {
+          console.error('Error inheriting collaborator:', insertError);
+        }
+      }
+
+      console.log(`Successfully inherited ${folderCollaborators.length} collaborators for note ${noteId}`);
+    } catch (error) {
+      console.error('Error in inheritFolderCollaborators:', error);
+    }
+  };
+
   // Clean up unused tags from the database
   const cleanupUnusedTags = async () => {
     try {
@@ -387,6 +436,12 @@ export function NotesLayout({ user }: { user: { id: string } }) {
             try {
               const { error } = await supabaseClient.from('notes').update({ folder_id: folderId }).eq('id', noteId).eq('user_id', user.id);
               if (error) throw error;
+              
+              // Auto-inherit collaborators from new shared folder
+              if (folderId) {
+                await inheritFolderCollaborators(noteId, folderId);
+              }
+              
               setNotes((prev) => prev.map((n) => n.id === noteId ? { ...n, folder_id: folderId } : n));
               if (selectedNote?.id === noteId) {
                 setSelectedNote({ ...(selectedNote as Note), folder_id: folderId });

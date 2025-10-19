@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { AnimatePresence, motion } from "framer-motion";
 import { Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface PresenceAvatarsProps {
   collaborators: Array<{
@@ -25,6 +26,7 @@ export function PresenceAvatars({
   size = "md",
   maxVisible = 5
 }: PresenceAvatarsProps) {
+  const { t } = useLanguage();
   const [profiles, setProfiles] = useState<Array<Profile & { isOnline: boolean; lastSeen: string; permission?: string }>>([]);
 
   // Size configurations
@@ -238,8 +240,8 @@ export function PresenceAvatars({
                     )}
                     <p className="mt-1 text-xs text-muted-foreground">
                       {profile.isOnline 
-                        ? "Online now" 
-                        : `Last seen ${new Date(profile.lastSeen).toLocaleString()}`
+                        ? t("presence.online_now") 
+                        : t("presence.last_seen").replace("{time}", new Date(profile.lastSeen).toLocaleString())
                       }
                     </p>
                   </div>

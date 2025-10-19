@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Download, FileText, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface ExportDialogProps {
   noteTitle: string;
@@ -10,6 +11,7 @@ interface ExportDialogProps {
 
 export function ExportDialog({ noteTitle, noteBody }: ExportDialogProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const exportAsMarkdown = () => {
     const markdown = `# ${noteTitle}\n\n${noteBody}`;
@@ -82,7 +84,7 @@ export function ExportDialog({ noteTitle, noteBody }: ExportDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          Export
+          {t("notes.export")}
         </Button>
       </DialogTrigger>
       <DialogContent>

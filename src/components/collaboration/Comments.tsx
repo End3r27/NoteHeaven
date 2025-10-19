@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDistanceToNow } from "date-fns";
+import { useLanguage } from "@/components/language/LanguageProvider";
 
 interface CommentsProps {
   noteId: string;
@@ -29,6 +30,7 @@ const EMOJI_OPTIONS = ["👍", "❤️", "🔥", "🎉", "🤔", "👀"];
 
 export function Comments({ noteId }: CommentsProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<CommentWithUser[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -141,7 +143,7 @@ export function Comments({ noteId }: CommentsProps) {
       if (!user) {
         toast({
           title: "Error",
-          description: "You must be logged in to comment",
+          description: t("comments.login_required"),
           variant: "destructive",
         });
         return;
@@ -160,7 +162,7 @@ export function Comments({ noteId }: CommentsProps) {
       console.error("Error adding comment:", error);
       toast({
         title: "Error",
-        description: "Failed to add comment",
+        description: t("comments.add_error"),
         variant: "destructive",
       });
     }
@@ -175,7 +177,7 @@ export function Comments({ noteId }: CommentsProps) {
       if (!user) {
         toast({
           title: "Error",
-          description: "You must be logged in to react",
+          description: t("comments.react_login_required"),
           variant: "destructive",
         });
         return;
@@ -210,14 +212,14 @@ export function Comments({ noteId }: CommentsProps) {
       console.error("Error toggling reaction:", error);
       toast({
         title: "Error",
-        description: "Failed to update reaction",
+        description: t("comments.reaction_error"),
         variant: "destructive",
       });
     }
   };
 
   if (loading) {
-    return <div className="p-4 text-center">Loading comments...</div>;
+    return <div className="p-4 text-center">{t("comments.loading")}</div>;
   }
 
   return (
@@ -277,12 +279,12 @@ export function Comments({ noteId }: CommentsProps) {
         <Textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Write a comment..."
+          placeholder={t("comments.write_placeholder")}
           className="mb-2"
           rows={2}
         />
         <Button type="submit" disabled={!newComment.trim()}>
-          Comment
+          {t("comments.comment_button")}
         </Button>
       </form>
     </div>

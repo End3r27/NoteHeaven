@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/components/language/LanguageProvider';
 
 interface Notification {
   id: string;
@@ -96,6 +97,7 @@ const isInvite = (notification: Notification): boolean => {
 export const NotificationsMenu = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
@@ -274,18 +276,18 @@ export const NotificationsMenu = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-96">
         <div className="flex items-center justify-between p-2">
-            <h3 className="font-semibold">Notifications</h3>
+            <h3 className="font-semibold">{t("notifications.title")}</h3>
             {unreadCount > 0 && (
                 <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
                     <Check className="mr-2 h-4 w-4" />
-                    Mark all as read
+                    {t("notifications.mark_read")}
                 </Button>
             )}
         </div>
         <DropdownMenuSeparator />
         {notifications.length === 0 ? (
           <p className="p-4 text-center text-sm text-muted-foreground">
-            No new notifications.
+            {t("notifications.no_notifications")}
           </p>
         ) : (
           notifications.map((notification) => (
@@ -326,7 +328,7 @@ export const NotificationsMenu = () => {
                       onClick={() => handleAcceptInvite(notification)}
                       className="flex-1"
                     >
-                      Accept
+                      {t("notifications.accept")}
                     </Button>
                     <Button
                       size="sm"
@@ -335,7 +337,7 @@ export const NotificationsMenu = () => {
                       className="flex-1"
                     >
                       <X className="h-4 w-4 mr-1" />
-                      Decline
+                      {t("notifications.decline")}
                     </Button>
                   </div>
                 )}
