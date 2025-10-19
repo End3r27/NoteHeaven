@@ -134,6 +134,12 @@ const translations = {
     "collaboration.search": "Search",
     "collaboration.manage_collaborators": "Manage Collaborators",
     "collaboration.invite_people": "Invite people to collaborate on \"{title}\"",
+    "collaboration.active_collaborators": "Active Collaborators",
+    "collaboration.view_collaborators": "View Collaborators",
+    "collaboration.exit_collaboration": "Exit Collaboration",
+    "collaboration.exit_confirm": "Are you sure you want to exit this collaboration? You will lose access to this note.",
+    "collaboration.exit_success": "You have left the collaboration",
+    "collaboration.exit_error": "Failed to exit collaboration",
     
     // Comments
     "comments.loading": "Loading comments...",
@@ -253,6 +259,8 @@ const translations = {
     "profile.no_followers": "No followers yet",
     "profile.no_following": "Not following anyone yet",
     "profile.close": "Close",
+    "profile.activity": "Activity",
+    "profile.preferences": "Preferences",
     
     // Landing Page
     "landing.welcome_title": "Welcome to NoteHaven",
@@ -404,6 +412,12 @@ const translations = {
     "collaboration.search": "Cerca",
     "collaboration.manage_collaborators": "Gestisci collaboratori",
     "collaboration.invite_people": "Invita persone a collaborare su \"{title}\"",
+    "collaboration.active_collaborators": "Collaboratori Attivi",
+    "collaboration.view_collaborators": "Visualizza Collaboratori",
+    "collaboration.exit_collaboration": "Esci dalla Collaborazione",
+    "collaboration.exit_confirm": "Sei sicuro di voler uscire da questa collaborazione? Perderai l'accesso a questa nota.",
+    "collaboration.exit_success": "Hai lasciato la collaborazione",
+    "collaboration.exit_error": "Impossibile uscire dalla collaborazione",
     
     // Comments
     "comments.loading": "Caricamento commenti...",
@@ -523,6 +537,8 @@ const translations = {
     "profile.no_followers": "Nessun follower ancora",
     "profile.no_following": "Non segue ancora nessuno",
     "profile.close": "Chiudi",
+    "profile.activity": "Attività",
+    "profile.preferences": "Preferenze",
     
     // Landing Page
     "landing.welcome_title": "Benvenuto su NoteHaven",

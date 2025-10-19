@@ -48,6 +48,8 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedPermission, setSelectedPermission] = useState<'viewer' | 'editor'>('editor');
+  const [isOwner, setIsOwner] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -67,12 +69,17 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    setCurrentUserId(user.id);
+
     // Get the note to find the owner
     const { data: noteData } = await supabase
       .from('notes')
       .select('user_id')
       .eq('id', noteId)
       .single();
+
+    // Check if current user is the owner
+    setIsOwner(noteData?.user_id === user.id);
 
     // Get shared users
     const { data, error } = await supabase
@@ -250,7 +257,37 @@ const handleInvite = async (userId: string) => {
   }
 };
 
-// Add this inside your CollaboratorsDialog component, near the other handlers
+// Exit collaboration function for invited users
+const handleExitCollaboration = async () => {
+  if (!currentUserId) return;
+
+  const confirmed = window.confirm(t("collaboration.exit_confirm"));
+  if (!confirmed) return;
+
+  try {
+    const { error } = await supabase
+      .from('shared_notes')
+      .delete()
+      .eq('note_id', noteId)
+      .eq('user_id', currentUserId);
+
+    if (error) throw error;
+
+    toast({
+      title: t("collaboration.exit_success"),
+    });
+
+    setOpen(false);
+    // Redirect to notes page since they no longer have access
+    window.location.href = '/notes';
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: t("collaboration.exit_error"),
+      variant: "destructive",
+    });
+  }
+};
 
 const handleRemove = async (collabId: string) => {
   try {
@@ -314,7 +351,7 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="flex items-center gap-2">
           <Users className="h-4 w-4" />
-          {t('collaboration.manage_collaborators')}
+          {isOwner ? t('collaboration.manage_collaborators') : t('collaboration.view_collaborators')}
           {collaborators.length > 0 && (
             <PresenceAvatars 
               collaborators={collaborators.map(c => ({ user_id: c.userId, permission: c.permission, accepted: c.accepted }))}
@@ -329,16 +366,20 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {t('collaboration.manage_collaborators')}
+            {isOwner ? t('collaboration.manage_collaborators') : t('collaboration.active_collaborators')}
           </DialogTitle>
           <DialogDescription>
-            {t('collaboration.invite_people').replace('{title}', noteTitle)}
+            {isOwner 
+              ? t('collaboration.invite_people').replace('{title}', noteTitle)
+              : t('collaboration.view_collaborators')
+            }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Search and invite */}
-          <div className="space-y-2">
+          {/* Search and invite - only for owners */}
+          {isOwner && (
+            <div className="space-y-2">
             <div className="flex gap-2">
               <Input
                 placeholder={t('collaboration.search_nickname')}
@@ -396,7 +437,21 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                 ))}
               </div>
             )}
-          </div>
+            </div>
+          )}
+
+          {/* Exit collaboration button - only for invited users */}
+          {!isOwner && (
+            <div className="border-t pt-4">
+              <Button 
+                variant="destructive" 
+                onClick={handleExitCollaboration}
+                className="w-full"
+              >
+                {t('collaboration.exit_collaboration')}
+              </Button>
+            </div>
+          )}
 
           {/* Current collaborators */}
           {collaborators.length > 0 && (
@@ -428,7 +483,7 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                             <Badge variant="default" className="text-xs">
                               Owner
                             </Badge>
-                          ) : (
+                          ) : isOwner ? (
                             <Select
                               value={collab.permission}
                               onValueChange={(v) =>
@@ -443,6 +498,10 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                                 <SelectItem value="editor">{t('collaboration.editor')}</SelectItem>
                               </SelectContent>
                             </Select>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              {collab.permission === 'viewer' ? t('collaboration.viewer') : t('collaboration.editor')}
+                            </Badge>
                           )}
                           {!collab.accepted && (
                             <Badge variant="outline" className="text-xs">
@@ -452,7 +511,7 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                         </div>
                       </div>
                     </div>
-                    {collab.permission !== 'owner' && (
+                    {collab.permission !== 'owner' && isOwner && (
                       <Button
                         size="icon"
                         variant="ghost"

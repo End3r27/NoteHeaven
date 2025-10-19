@@ -29,6 +29,7 @@ import {
 interface Folder {
   id: string;
   name: string;
+  user_id?: string;
 }
 
 interface SharedUser {
@@ -76,9 +77,19 @@ export function NotesSidebar({
   const [newFolderName, setNewFolderName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sharedFolderUsers, setSharedFolderUsers] = useState<Record<string, SharedUser[]>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { t } = useLanguage();
   const MAX_STORAGE = 2.5 * 1024 * 1024 * 1024; // 2.5GB in bytes
+
+  // Get current user ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
 
 const fetchStorage = async () => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -239,22 +250,24 @@ const fetchSharedFolderUsers = async () => {
                         />
                       </div>
                     )}
-                    <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100">
-                      <ShareFolderDialog folderId={folder.id} folderName={folder.name} />
-                      <Button asChild className="h-6 w-6 p-0">
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteFolder(folder.id);
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          className="flex items-center justify-center h-6 w-6"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </div>
-                      </Button>
-                    </div>
+                    {(folder.user_id === currentUserId || !folder.user_id) && (
+                      <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                        <ShareFolderDialog folderId={folder.id} folderName={folder.name} />
+                        <Button asChild className="h-6 w-6 p-0">
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteFolder(folder.id);
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            className="flex items-center justify-center h-6 w-6"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </div>
+                        </Button>
+                      </div>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
