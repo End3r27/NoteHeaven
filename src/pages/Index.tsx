@@ -44,44 +44,44 @@ const Index = () => {
           </div>
         </div>
         <h1 className="mb-4 text-5xl font-bold tracking-tight">
-          Welcome to NoteHaven
+          {t("landing.welcome_title")}
         </h1>
         <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-          Your personal note manager with powerful organization features. 
-          Create, organize, and find your thoughts effortlessly.
+          {t("landing.welcome_subtitle")}
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="p-6 rounded-lg border border-border bg-card">
             <FolderOpen className="h-8 w-8 text-primary mx-auto mb-3" />
-            <h3 className="font-semibold mb-2">Organize with Folders</h3>
+            <h3 className="font-semibold mb-2">{t("landing.organize_title")}</h3>
             <p className="text-sm text-muted-foreground">
-              Keep your notes organized in custom folders
+              {t("landing.organize_desc")}
             </p>
           </div>
           <div className="p-6 rounded-lg border border-border bg-card">
             <Tag className="h-8 w-8 text-primary mx-auto mb-3" />
-            <h3 className="font-semibold mb-2">Tag Everything</h3>
+            <h3 className="font-semibold mb-2">{t("landing.tag_title")}</h3>
             <p className="text-sm text-muted-foreground">
-              Add multiple tags to categorize your notes
+              {t("landing.tag_desc")}
             </p>
           </div>
           <div className="p-6 rounded-lg border border-border bg-card">
             <Search className="h-8 w-8 text-primary mx-auto mb-3" />
-            <h3 className="font-semibold mb-2">Find Instantly</h3>
+            <h3 className="font-semibold mb-2">{t("landing.search_title")}</h3>
             <p className="text-sm text-muted-foreground">
-              Powerful search to find any note in seconds
+              {t("landing.search_desc")}
             </p>
           </div>
         </div>
 
         <div className="flex gap-4 justify-center">
           <Button size="lg" onClick={() => navigate("/auth")}>
-            Get Started
+            {t("landing.get_started")}
           </Button>
           <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
-            Sign In
+            {t("landing.sign_in")}
           </Button>
+        </div>
         </div>
       </div>
     </div>

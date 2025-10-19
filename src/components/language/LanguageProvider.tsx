@@ -249,6 +249,32 @@ const translations = {
     "profile.no_followers": "No followers yet",
     "profile.no_following": "Not following anyone yet",
     "profile.close": "Close",
+    
+    // Landing Page
+    "landing.welcome_title": "Welcome to NoteHaven",
+    "landing.welcome_subtitle": "Your personal note manager with powerful organization features. Create, organize, and find your thoughts effortlessly.",
+    "landing.organize_title": "Organize with Folders",
+    "landing.organize_desc": "Keep your notes organized in custom folders",
+    "landing.tag_title": "Tag Everything",
+    "landing.tag_desc": "Add multiple tags to categorize your notes",
+    "landing.search_title": "Find Instantly",
+    "landing.search_desc": "Powerful search to find any note in seconds",
+    "landing.get_started": "Get Started",
+    "landing.sign_in": "Sign In",
+    
+    // Personality Tags
+    "personality.creative": "Creative",
+    "personality.analytical": "Analytical", 
+    "personality.organized": "Organized",
+    "personality.spontaneous": "Spontaneous",
+    "personality.collaborative": "Collaborative",
+    "personality.independent": "Independent",
+    "personality.detail_oriented": "Detail-oriented",
+    "personality.big_picture": "Big picture",
+    "personality.tech_savvy": "Tech-savvy",
+    "personality.artistic": "Artistic",
+    "personality.strategic": "Strategic",
+    "personality.innovative": "Innovative",
   },
   it: {
     // Auth page
@@ -489,6 +515,32 @@ const translations = {
     "profile.no_followers": "Nessun follower ancora",
     "profile.no_following": "Non segue ancora nessuno",
     "profile.close": "Chiudi",
+    
+    // Landing Page
+    "landing.welcome_title": "Benvenuto su NoteHaven",
+    "landing.welcome_subtitle": "Il tuo gestore di note personale con potenti funzionalità di organizzazione. Crea, organizza e trova i tuoi pensieri senza sforzo.",
+    "landing.organize_title": "Organizza con le cartelle",
+    "landing.organize_desc": "Mantieni le tue note organizzate in cartelle personalizzate",
+    "landing.tag_title": "Etichetta tutto",
+    "landing.tag_desc": "Aggiungi più tag per categorizzare le tue note",
+    "landing.search_title": "Trova istantaneamente",
+    "landing.search_desc": "Ricerca potente per trovare qualsiasi nota in secondi",
+    "landing.get_started": "Inizia",
+    "landing.sign_in": "Accedi",
+    
+    // Personality Tags
+    "personality.creative": "Creativo",
+    "personality.analytical": "Analitico", 
+    "personality.organized": "Organizzato",
+    "personality.spontaneous": "Spontaneo",
+    "personality.collaborative": "Collaborativo",
+    "personality.independent": "Indipendente",
+    "personality.detail_oriented": "Attento ai dettagli",
+    "personality.big_picture": "Visione d'insieme",
+    "personality.tech_savvy": "Esperto di tecnologia",
+    "personality.artistic": "Artistico",
+    "personality.strategic": "Strategico",
+    "personality.innovative": "Innovativo",
   },
 };
 

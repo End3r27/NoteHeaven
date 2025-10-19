@@ -21,10 +21,10 @@ const PRESET_COLORS = [
   "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"
 ];
 
-const PERSONALITY_TAGS = [
-  "Creative", "Analytical", "Organized", "Spontaneous",
-  "Collaborative", "Independent", "Detail-oriented", "Big picture",
-  "Tech-savvy", "Artistic", "Strategic", "Innovative"
+const PERSONALITY_TAG_KEYS = [
+  "personality.creative", "personality.analytical", "personality.organized", "personality.spontaneous",
+  "personality.collaborative", "personality.independent", "personality.detail_oriented", "personality.big_picture",
+  "personality.tech_savvy", "personality.artistic", "personality.strategic", "personality.innovative"
 ];
 
 const ProfileSetup = () => {
@@ -386,15 +386,16 @@ const ProfileSetup = () => {
                 {t("profile_setup.personality_hint")}
               </p>
               <div className="grid grid-cols-2 gap-2">
-                {PERSONALITY_TAGS.map((tag) => {
-                  const isSelected = selectedTags.includes(tag);
+                {PERSONALITY_TAG_KEYS.map((tagKey) => {
+                  const tagValue = t(tagKey);
+                  const isSelected = selectedTags.includes(tagValue);
                   return (
                     <motion.button
-                      key={tag}
+                      key={tagKey}
                       type="button"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => togglePersonalityTag(tag)}
+                      onClick={() => togglePersonalityTag(tagValue)}
                       disabled={!isSelected && selectedTags.length >= 5}
                       className={`p-3 rounded-lg text-sm font-medium transition-all ${
                         isSelected
@@ -402,7 +403,7 @@ const ProfileSetup = () => {
                           : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
-                      {tag}
+                      {tagValue}
                     </motion.button>
                   );
                 })}
