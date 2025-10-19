@@ -26,7 +26,7 @@ interface CommentWithUser {
   reactions: CommentReaction[];
 }
 
-const EMOJI_OPTIONS = ["👍", "❤️", "🔥", "🎉", "🤔"];
+const EMOJI_OPTIONS = ["👍", "❤️", "🔥", "🎉"];
 
 export function Comments({ noteId }: CommentsProps) {
   const { toast } = useToast();
