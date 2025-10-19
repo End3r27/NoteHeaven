@@ -8,6 +8,7 @@ import { Users, User, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/components/language/LanguageProvider";
 import { PresenceAvatars } from "@/components/collaboration/PresenceAvatars";
 
@@ -24,6 +25,7 @@ interface SharedUser {
   profiles: {
     nickname: string;
     favorite_color: string;
+    profile_pic_url?: string;
   };
 }
 
@@ -79,7 +81,7 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
     const userIds = allUsers.map(d => d.user_id);
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, nickname, favorite_color')
+      .select('id, nickname, favorite_color, profile_pic_url')
       .in('id', userIds);
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -97,7 +99,7 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, nickname, favorite_color')
+      .select('id, nickname, favorite_color, profile_pic_url')
       .ilike('nickname', `%${searchQuery}%`)
       .limit(5);
 
@@ -245,12 +247,18 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
                 {searchResults.map((user) => (
                   <div key={user.id} className="p-2 flex items-center justify-between hover:bg-muted/50">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                        style={{ backgroundColor: user.favorite_color }}
-                      >
-                        {user.nickname[0].toUpperCase()}
-                      </div>
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage 
+                          src={user.profile_pic_url || undefined} 
+                          alt={user.nickname} 
+                        />
+                        <AvatarFallback
+                          className="text-white text-xs font-medium"
+                          style={{ backgroundColor: user.favorite_color }}
+                        >
+                          {user.nickname[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <span className="text-sm">{user.nickname}</span>
                     </div>
                     <div
@@ -280,12 +288,18 @@ export function ShareFolderDialog({ folderId, folderName }: ShareFolderDialogPro
                 {sharedUsers.map((share) => (
                   <div key={share.id} className="p-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
-                        style={{ backgroundColor: share.profiles.favorite_color }}
-                      >
-                        {share.profiles.nickname[0].toUpperCase()}
-                      </div>
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage 
+                          src={share.profiles.profile_pic_url || undefined} 
+                          alt={share.profiles.nickname} 
+                        />
+                        <AvatarFallback
+                          className="text-white text-xs font-medium"
+                          style={{ backgroundColor: share.profiles.favorite_color }}
+                        >
+                          {share.profiles.nickname[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <span className="text-sm">{share.profiles.nickname}</span>
                       <Badge variant={share.permission === 'owner' ? "default" : "secondary"} className="text-xs">
                         {share.permission}

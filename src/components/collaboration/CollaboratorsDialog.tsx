@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -371,11 +371,17 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                     className="p-2 flex items-center justify-between hover:bg-muted/50"
                   >
                     <div className="flex items-center gap-2">
-                      <Avatar
-                        className="h-8 w-8 flex items-center justify-center text-white text-xs font-medium"
-                        style={{ backgroundColor: user.favorite_color }}
-                      >
-                        {user.nickname[0].toUpperCase()}
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage 
+                          src={user.profile_pic_url || undefined} 
+                          alt={user.nickname} 
+                        />
+                        <AvatarFallback
+                          className="text-white text-xs font-medium"
+                          style={{ backgroundColor: user.favorite_color }}
+                        >
+                          {user.nickname[0].toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <span className="text-sm font-medium">{user.nickname}</span>
                     </div>
@@ -403,11 +409,17 @@ const handlePermissionChange = async (collabId: string, newPermission: 'viewer' 
                     className="p-3 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar
-                        className="h-8 w-8 flex items-center justify-center text-white text-xs font-medium"
-                        style={{ backgroundColor: collab.user.favoriteColor }}
-                      >
-                        {collab.user.nickname[0].toUpperCase()}
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage 
+                          src={collab.user.avatarUrl || undefined} 
+                          alt={collab.user.nickname} 
+                        />
+                        <AvatarFallback
+                          className="text-white text-xs font-medium"
+                          style={{ backgroundColor: collab.user.favoriteColor }}
+                        >
+                          {collab.user.nickname[0].toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium">{collab.user.nickname}</p>

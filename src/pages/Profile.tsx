@@ -163,6 +163,9 @@ export default function Profile() {
           is_following: false
         }));
 
+        // Refresh stats to ensure accurate counts
+        setTimeout(() => fetchStats(), 100);
+
         toast({
           title: t("profile.unfollow_success").replace("{name}", profile?.nickname || ""),
           description: "",
@@ -180,6 +183,9 @@ export default function Profile() {
           follower_count: prev.follower_count + 1,
           is_following: true
         }));
+
+        // Refresh stats to ensure accurate counts
+        setTimeout(() => fetchStats(), 100);
 
         toast({
           title: t("profile.follow_success").replace("{name}", profile?.nickname || ""),
