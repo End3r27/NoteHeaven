@@ -143,6 +143,10 @@ const translations = {
     "comments.add_error": "Failed to add comment",
     "comments.react_login_required": "You must be logged in to react",
     "comments.reaction_error": "Failed to update reaction",
+    "comments.delete": "Delete comment",
+    "comments.delete_confirm": "Are you sure you want to delete this comment?",
+    "comments.delete_success": "Comment deleted successfully",
+    "comments.delete_error": "Failed to delete comment",
     
     // Share and Export
     "notes.share": "Share",
@@ -409,6 +413,10 @@ const translations = {
     "comments.add_error": "Impossibile aggiungere il commento",
     "comments.react_login_required": "Devi essere connesso per reagire",
     "comments.reaction_error": "Impossibile aggiornare la reazione",
+    "comments.delete": "Elimina commento",
+    "comments.delete_confirm": "Sei sicuro di voler eliminare questo commento?",
+    "comments.delete_success": "Commento eliminato con successo",
+    "comments.delete_error": "Impossibile eliminare il commento",
     
     // Share and Export
     "notes.share": "Condividi",

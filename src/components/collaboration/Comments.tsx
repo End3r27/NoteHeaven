@@ -7,6 +7,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDistanceToNow } from "date-fns";
 import { useLanguage } from "@/components/language/LanguageProvider";
+import { Trash2, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface CommentsProps {
   noteId: string;
@@ -34,8 +41,16 @@ export function Comments({ noteId }: CommentsProps) {
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<CommentWithUser[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
+    // Get current user
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user?.id || null);
+    };
+    getCurrentUser();
+
     const fetchComments = async () => {
       try {
         type CommentWithProfile = {
@@ -218,6 +233,41 @@ export function Comments({ noteId }: CommentsProps) {
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      if (!currentUser) {
+        toast({
+          title: "Error",
+          description: t("comments.login_required"),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const confirmed = window.confirm(t("comments.delete_confirm"));
+      if (!confirmed) return;
+
+      const { error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId)
+        .eq("user_id", currentUser); // Ensure only the creator can delete
+
+      if (error) throw error;
+
+      toast({
+        title: t("comments.delete_success"),
+      });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast({
+        title: "Error",
+        description: t("comments.delete_error"),
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div className="p-4 text-center">{t("comments.loading")}</div>;
   }
@@ -242,13 +292,33 @@ export function Comments({ noteId }: CommentsProps) {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{comment.user.nickname}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(comment.created_at), {
-                      addSuffix: true,
-                    })}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{comment.user.nickname}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(comment.created_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                  {currentUser === comment.user_id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {t("comments.delete")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
                 <p className="mt-1 text-sm">{comment.content}</p>
                 <div className="mt-2 flex flex-wrap gap-1">
