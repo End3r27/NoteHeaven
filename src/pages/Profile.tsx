@@ -601,16 +601,16 @@ export default function Profile() {
                     </div>
                     {profile.last_seen_at && (
                       <div className="flex justify-between">
-                        <span>Ultima volta visto:</span>
+                        <span>{t("profile.last_seen")}</span>
                         <span className="text-sm text-muted-foreground">
-                          {new Date(profile.last_seen_at).toLocaleString()}
+                          {new Date(profile.last_seen_at).toLocaleString(language === "it" ? "it-IT" : "en-US")}
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span>Registrato:</span>
+                      <span>{t("profile.joined")}</span>
                       <span className="text-sm text-muted-foreground">
-                        {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown"}
+                        {profile.created_at ? new Date(profile.created_at).toLocaleDateString(language === "it" ? "it-IT" : "en-US") : t("profile.unknown")}
                       </span>
                     </div>
                   </div>

@@ -261,6 +261,9 @@ const translations = {
     "profile.close": "Close",
     "profile.activity": "Activity",
     "profile.preferences": "Preferences",
+    "profile.last_seen": "Last seen:",
+    "profile.joined": "Joined:",
+    "profile.unknown": "Unknown",
     
     // Landing Page
     "landing.welcome_title": "Welcome to NoteHaven",
@@ -539,6 +542,9 @@ const translations = {
     "profile.close": "Chiudi",
     "profile.activity": "Attività",
     "profile.preferences": "Preferenze",
+    "profile.last_seen": "Ultima volta visto:",
+    "profile.joined": "Registrato:",
+    "profile.unknown": "Sconosciuto",
     
     // Landing Page
     "landing.welcome_title": "Benvenuto su NoteHaven",
