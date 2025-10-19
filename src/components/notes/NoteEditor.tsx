@@ -464,7 +464,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
             {t("notes.comments")}
           </Button>
           <div className="text-xs text-muted-foreground ml-auto">
-            {t("editor.last_edited")} {new Date(note.updated_at).toLocaleDateString()}
+            {t("editor.last_edited")} {new Date(note.updated_at).toLocaleDateString(language === "it" ? "it-IT" : "en-US")}
           </div>
         </div>
         <div className="flex-1 overflow-y-auto flex">
@@ -621,7 +621,7 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
                             <div className="flex-1">
                               <p className="text-sm font-medium truncate">{att.filename}</p>
                               <p className="text-xs text-muted-foreground">
-                                {formatBytes(att.filesize)} - {new Date(att.uploaded_at).toLocaleDateString()}
+                                {formatBytes(att.filesize)} - {new Date(att.uploaded_at).toLocaleDateString(language === "it" ? "it-IT" : "en-US")}
                               </p>
                             </div>
                           </div>

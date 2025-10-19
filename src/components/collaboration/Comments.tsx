@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDistanceToNow } from "date-fns";
+import { it } from "date-fns/locale";
 import { useLanguage } from "@/components/language/LanguageProvider";
 import { Trash2, MoreHorizontal } from "lucide-react";
 import {
@@ -37,7 +38,7 @@ const EMOJI_OPTIONS = ["👍", "❤️", "🔥", "🎉"];
 
 export function Comments({ noteId }: CommentsProps) {
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<CommentWithUser[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -298,6 +299,7 @@ export function Comments({ noteId }: CommentsProps) {
                     <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(comment.created_at), {
                         addSuffix: true,
+                        locale: language === "it" ? it : undefined,
                       })}
                     </span>
                   </div>

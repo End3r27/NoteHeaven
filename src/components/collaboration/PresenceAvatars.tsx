@@ -26,7 +26,7 @@ export function PresenceAvatars({
   size = "md",
   maxVisible = 5
 }: PresenceAvatarsProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [profiles, setProfiles] = useState<Array<Profile & { isOnline: boolean; lastSeen: string; permission?: string }>>([]);
 
   // Size configurations
@@ -241,7 +241,7 @@ export function PresenceAvatars({
                     <p className="mt-1 text-xs text-muted-foreground">
                       {profile.isOnline 
                         ? t("presence.online_now") 
-                        : t("presence.last_seen").replace("{time}", new Date(profile.lastSeen).toLocaleString())
+                        : t("presence.last_seen").replace("{time}", new Date(profile.lastSeen).toLocaleString(language === "it" ? "it-IT" : "en-US"))
                       }
                     </p>
                   </div>
