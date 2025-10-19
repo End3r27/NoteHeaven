@@ -162,8 +162,8 @@ export default function Profile() {
         }));
 
         toast({
-          title: "Unfollowed",
-          description: `You are no longer following ${profile?.nickname}`,
+          title: t("profile.unfollow_success").replace("{name}", profile?.nickname || ""),
+          description: "",
         });
       } else {
         // Follow
@@ -180,8 +180,8 @@ export default function Profile() {
         }));
 
         toast({
-          title: "Following",
-          description: `You are now following ${profile?.nickname}`,
+          title: t("profile.follow_success").replace("{name}", profile?.nickname || ""),
+          description: "",
         });
       }
     } catch (error: any) {
@@ -219,8 +219,8 @@ export default function Profile() {
 
       setEditing(false);
       toast({
-        title: "Profile updated",
-        description: "Your profile has been saved successfully",
+        title: t("profile.profile_updated"),
+        description: t("profile.changes_saved"),
       });
     } catch (error: any) {
       toast({
@@ -321,8 +321,8 @@ export default function Profile() {
       }, 500);
       
       toast({
-        title: "Profile picture updated",
-        description: "Your new profile picture has been saved",
+        title: t("profile_setup.image_uploaded"),
+        description: t("profile_setup.image_updated"),
       });
     } catch (error: any) {
       toast({
@@ -357,7 +357,7 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">Loading profile...</div>
+        <div className="text-center">{t("profile_setup.loading")}</div>
       </div>
     );
   }
@@ -365,7 +365,7 @@ export default function Profile() {
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">Profile not found</div>
+        <div className="text-center">Profilo non trovato</div>
       </div>
     );
   }
@@ -375,7 +375,7 @@ export default function Profile() {
       <header className="border-b border-border h-14 flex items-center px-4 gap-4">
         <Button variant="ghost" size="sm" onClick={() => navigate("/notes")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Notes
+          {t("daily.back_to_notes")}
         </Button>
       </header>
 
@@ -424,13 +424,13 @@ export default function Profile() {
                   {isOwnProfile ? (
                     editing ? (
                       <div className="flex gap-2">
-                        <Button onClick={handleSaveProfile} size="sm">Save</Button>
-                        <Button onClick={() => setEditing(false)} variant="outline" size="sm">Cancel</Button>
+                        <Button onClick={handleSaveProfile} size="sm">{t("profile.save_changes")}</Button>
+                        <Button onClick={() => setEditing(false)} variant="outline" size="sm">{t("profile.cancel")}</Button>
                       </div>
                     ) : (
                       <Button onClick={() => setEditing(true)} variant="outline" size="sm">
                         <Edit className="h-4 w-4 mr-2" />
-                        Edit Profile
+                        {t("profile.edit_profile")}
                       </Button>
                     )
                   ) : (
@@ -438,12 +438,12 @@ export default function Profile() {
                       {stats.is_following ? (
                         <>
                           <UserMinus className="h-4 w-4 mr-2" />
-                          Unfollow
+                          {t("profile.unfollow")}
                         </>
                       ) : (
                         <>
                           <UserPlus className="h-4 w-4 mr-2" />
-                          Follow
+                          {t("profile.follow")}
                         </>
                       )}
                     </Button>
@@ -455,12 +455,12 @@ export default function Profile() {
                     <DialogTrigger asChild>
                       <Button variant="ghost" className="p-0 h-auto" onClick={fetchFollowers}>
                         <span className="font-semibold">{stats.follower_count}</span>
-                        <span className="ml-1 text-muted-foreground">followers</span>
+                        <span className="ml-1 text-muted-foreground">{t("profile.followers")}</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
-                        <DialogTitle>Followers</DialogTitle>
+                        <DialogTitle>{t("profile.followers_list")}</DialogTitle>
                         <DialogDescription>People following {profile.nickname}</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -487,12 +487,12 @@ export default function Profile() {
                     <DialogTrigger asChild>
                       <Button variant="ghost" className="p-0 h-auto" onClick={fetchFollowing}>
                         <span className="font-semibold">{stats.following_count}</span>
-                        <span className="ml-1 text-muted-foreground">following</span>
+                        <span className="ml-1 text-muted-foreground">{t("profile.following_count")}</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
-                        <DialogTitle>Following</DialogTitle>
+                        <DialogTitle>{t("profile.following_list")}</DialogTitle>
                         <DialogDescription>People {profile.nickname} follows</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -519,17 +519,17 @@ export default function Profile() {
                 {editing ? (
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="bio">Bio</Label>
+                      <Label htmlFor="bio">{t("profile.bio")}</Label>
                       <Textarea
                         id="bio"
                         value={editForm.bio}
                         onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
-                        placeholder="Tell us about yourself..."
+                        placeholder={t("profile_setup.bio_placeholder")}
                         rows={3}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="color">Favorite Color</Label>
+                      <Label htmlFor="color">{t("profile.favorite_color")}</Label>
                       <div className="flex gap-2 items-center">
                         <input
                           type="color"
@@ -538,7 +538,7 @@ export default function Profile() {
                           onChange={(e) => setEditForm(prev => ({ ...prev, favorite_color: e.target.value }))}
                           className="w-12 h-8 rounded border border-input"
                         />
-                        <span className="text-sm text-muted-foreground">Used for avatars and highlights</span>
+                        <span className="text-sm text-muted-foreground">{t("profile_setup.color_hint")}</span>
                       </div>
                     </div>
                   </div>
@@ -557,7 +557,7 @@ export default function Profile() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Activity
+                    Attività
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -565,19 +565,19 @@ export default function Profile() {
                     <div className="flex justify-between">
                       <span>Status:</span>
                       <Badge variant={getOnlineStatus() === "online" ? "default" : "secondary"}>
-                        {getOnlineStatus()}
+                        {getOnlineStatus() === "online" ? t("profile.online") : t("profile.offline")}
                       </Badge>
                     </div>
                     {profile.last_seen_at && (
                       <div className="flex justify-between">
-                        <span>Last seen:</span>
+                        <span>Ultima volta visto:</span>
                         <span className="text-sm text-muted-foreground">
                           {new Date(profile.last_seen_at).toLocaleString()}
                         </span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span>Joined:</span>
+                      <span>Registrato:</span>
                       <span className="text-sm text-muted-foreground">
                         {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : "Unknown"}
                       </span>
@@ -590,13 +590,13 @@ export default function Profile() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Heart className="h-5 w-5" />
-                    Preferences
+                    Preferenze
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span>Favorite Color:</span>
+                      <span>{t("profile.favorite_color")}:</span>
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-6 h-6 rounded-full border border-border"
