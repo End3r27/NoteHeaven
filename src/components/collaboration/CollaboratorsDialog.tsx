@@ -52,10 +52,16 @@ export const CollaboratorsDialog = ({ noteId, noteTitle }: CollaboratorsDialogPr
   const { t } = useLanguage();
 
   useEffect(() => {
+    // Fetch collaborators on mount to show presence avatars in button
+    fetchCollaborators();
+  }, [noteId]);
+
+  useEffect(() => {
+    // Refresh collaborators when dialog opens
     if (open) {
       fetchCollaborators();
     }
-  }, [open, noteId]);
+  }, [open]);
 
   const fetchCollaborators = async () => {
     const { data: { user } } = await supabase.auth.getUser();

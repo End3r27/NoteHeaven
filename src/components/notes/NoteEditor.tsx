@@ -456,12 +456,12 @@ export function NoteEditor({ note, onUpdate, onDelete, tags, onTagsChange }: Not
             noteBody={body}
           />
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => setShowComments(!showComments)}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
-            Comments
+            {t("notes.comments")}
           </Button>
           <div className="text-xs text-muted-foreground ml-auto">
             {t("editor.last_edited")} {new Date(note.updated_at).toLocaleDateString()}

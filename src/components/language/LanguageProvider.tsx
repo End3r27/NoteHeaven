@@ -147,6 +147,7 @@ const translations = {
     // Share and Export
     "notes.share": "Share",
     "notes.export": "Export",
+    "notes.comments": "Comments",
     
     // Storage
     "storage.used": "Storage Used",
@@ -299,6 +300,7 @@ const translations = {
     // Share and Export
     "notes.share": "Condividi",
     "notes.export": "Esporta",
+    "notes.comments": "Commenti",
     
     // Storage
     "storage.used": "Spazio utilizzato",
