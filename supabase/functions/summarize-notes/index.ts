@@ -129,7 +129,7 @@ serve(async (req) => {
       `Title: ${note.title}\nContent: ${note.body}\nLast updated: ${new Date(note.updated_at).toLocaleDateString()}`
     ).join('\n\n---\n\n');
 
-    // Call Lovable AI
+    // Call AI
     const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
     if (!GOOGLE_AI_API_KEY) {
       throw new Error('GOOGLE_AI_API_KEY is not configured');
